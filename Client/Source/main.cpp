@@ -6,7 +6,8 @@
 using namespace std;
 
 #include "Game.h"
-#include "InitDirectX.h"
+#include "Engine.h"
+#include "Render.h"
 
 #pragma comment(lib, "d3d9.lib")
 #pragma comment(lib, "d3dx9.lib")
