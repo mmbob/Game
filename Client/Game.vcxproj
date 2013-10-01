@@ -85,7 +85,7 @@
     <ClCompile Include="Source\GameWorld.cpp" />
     <ClCompile Include="Source\DirectX.cpp" />
     <ClCompile Include="Source\main.cpp" />
-    <ClCompile Include="Source\Render.cpp" />
+    <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\WorldGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -93,7 +93,7 @@
     <ClInclude Include="Source\Game.h" />
     <ClInclude Include="Source\GameWorld.h" />
     <ClInclude Include="Source\DirectX.h" />
-    <ClInclude Include="Source\Render.h" />
+    <ClInclude Include="Source\Renderer.h" />
     <ClInclude Include="Source\WorldGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

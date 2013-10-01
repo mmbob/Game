@@ -10,7 +10,6 @@ class DirectXManager
 	LPDIRECT3D9 pDirectX;
 	LPDIRECT3DDEVICE9 pDevice;
 	LPD3DXSPRITE pSprite;
-	LPD3DXFONT pFont;
 
 	// Input
 	LPDIRECTINPUT8 pInput;
@@ -24,5 +23,4 @@ public:
 
 	LPDIRECT3DDEVICE9 GetDevice() const;
 	LPD3DXSPRITE GetSprite() const;
-	LPD3DXFONT GetFont() const;
 };

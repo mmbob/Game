@@ -1,5 +1,6 @@
 #include "Game.h"
 
+#include <windowsx.h>
 #include <cassert>
 
 const wchar_t* GameClient::WindowClassName = L"fa3a766d-cc01-4644-98fe-fa9008e7a20d";
@@ -16,14 +17,22 @@ bool GameClient::InitInstance(HINSTANCE instance)
 	if (GetLastError() == ERROR_ALREADY_EXISTS)		// Another game window is already open
 	{
 		HWND otherWindow = FindWindow(WindowClassName, nullptr);
+
+		SetForegroundWindow(otherWindow);
+
+		return false;
 	}
+
+	this->instance = instance;
 
 	WNDCLASSEX wc;
 	ZeroMemory(&wc, sizeof(wc));
 	wc.cbSize = sizeof(wc);
+	wc.hInstance = instance;
 	wc.lpszClassName = WindowClassName;
 	wc.style = CS_DBLCLKS;
 	wc.lpfnWndProc = WinProc;
+	wc.hbrBackground = GetStockBrush(BLACK_BRUSH);
 
 	bool success = (RegisterClassEx(&wc) != 0);
 	if (!success)
@@ -42,9 +51,9 @@ void GameClient::CreateMainWindow(int width, int height, bool fullScreen)
 
 	AdjustWindowRectEx(&rc, styles, false, exStyles);	// check
 
-	HWND window = CreateWindowEx(exStyles, WindowClassName, WindowTitle, styles, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, HWND_DESKTOP, nullptr, instance, nullptr);
+	mainWindow = CreateWindowEx(exStyles, WindowClassName, WindowTitle, styles, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, HWND_DESKTOP, nullptr, instance, nullptr);
 
-	GetClientRect(window, &rc);
+	GetClientRect(mainWindow, &rc);
 	assert(rc.right == width && rc.bottom == height);
 }
 
@@ -54,6 +63,13 @@ LRESULT CALLBACK GameClient::WinProc(HWND window, UINT message, WPARAM wParam, L
 	{
 	case WM_CREATE:
 
+		break;
+
+	case WM_ERASEBKGND:
+		break;
+
+	case WM_CLOSE:
+		DestroyWindow(window);
 		break;
 
 	case WM_DESTROY:
@@ -72,4 +88,7 @@ void GameClient::Init(HINSTANCE instance)
 	InitInstance(instance);
 
 	CreateMainWindow(ResolutionX, ResolutionY, false);
+
+//	engine.Init();
+	renderer.Init(mainWindow);
 }

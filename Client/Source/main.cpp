@@ -7,10 +7,13 @@ using namespace std;
 
 #include "Game.h"
 #include "Engine.h"
-#include "Render.h"
+#include "Renderer.h"
 
 #pragma comment(lib, "d3d9.lib")
 #pragma comment(lib, "d3dx9.lib")
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
+
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE instance, LPWSTR, int)
 {
@@ -21,10 +24,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE instance, LPWSTR, int)
 	MSG msg;
 
 	bool quit = false;
-
 	const int timePerFrame = 1000 / 60;
 	ULONGLONG lastFrame = GetTickCount64();
-
 	while (!quit)
 	{
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -40,12 +41,12 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE instance, LPWSTR, int)
 		if (currentFrame - lastFrame < timePerFrame)
 			Sleep(timePerFrame - (currentFrame - lastFrame));
 
-
+		g_pGameClient->renderer.Render();
 
 		lastFrame = currentFrame;
 	}
 
-	delete g_pGameClient;
+//	delete g_pGameClient;
 
 	return msg.wParam;
 }

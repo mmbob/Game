@@ -36,25 +36,18 @@ void DirectXManager::InitDeviceObjects(HWND window, int width, int height)
 	ZeroMemory(&parameters, sizeof(parameters));
 	parameters.Windowed = true;
 	parameters.hDeviceWindow = window;
-	parameters.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
 	parameters.BackBufferCount = 1;
-	parameters.BackBufferWidth = 800;
-	parameters.BackBufferHeight = 600;
-	parameters.BackBufferFormat = D3DFMT_R8G8B8;
-	parameters.MultiSampleType = D3DMULTISAMPLE_NONE;
-	parameters.SwapEffect = D3DSWAPEFFECT_FLIP;
+	parameters.BackBufferFormat = D3DFMT_UNKNOWN;
+	parameters.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+	parameters.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	parameters.EnableAutoDepthStencil = true;
+	parameters.AutoDepthStencilFormat = D3DFMT_D16;
 
-	HRESULT hr = pDirectX->CreateDevice(0, D3DDEVTYPE_HAL, nullptr, D3DCREATE_HARDWARE_VERTEXPROCESSING, &parameters, &pDevice);
+	HRESULT hr = pDirectX->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &parameters, &pDevice);
 	if (FAILED(hr))
 		DebugBreak();	// fix
 
 	hr = D3DXCreateSprite(pDevice, &pSprite);
-	if (FAILED(hr))
-		DebugBreak();	// fix
-
-	HDC context = GetDC(window);
-	hr = D3DXCreateFont(pDevice, -MulDiv(11, GetDeviceCaps(context, LOGPIXELSY), 72), 0, FW_NORMAL, 0, false, DEFAULT_CHARSET, 0, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Tahoma", &pFont);
-	ReleaseDC(window, context);
 	if (FAILED(hr))
 		DebugBreak();	// fix
 
@@ -74,11 +67,25 @@ void DirectXManager::InitDeviceObjects(HWND window, int width, int height)
 	hr = pKeyboard->SetDataFormat(&c_dfDIKeyboard);
 	if (FAILED(hr))
 		DebugBreak();	// fix
+
+	D3DXMATRIX World;
+	D3DXMatrixIdentity(&World);
+	pDevice->SetTransform(D3DTS_WORLD, &World);
+
+	D3DXMATRIX ProjMatrix;
+	D3DXMatrixPerspectiveFovLH(&ProjMatrix, D3DX_PI / 4, float(width) / float(height), 0.0f, 100.0f);
+	pDevice->SetTransform(D3DTS_PROJECTION, &ProjMatrix);
+
+	D3DXMATRIX ViewMatrix;
+	D3DXVECTOR3 vEyePt(0.0f, 0.0f, 0.0f);
+	D3DXVECTOR3 vLookatPt(0.0f, 0.0f, 0.0f);
+	D3DXVECTOR3 vUpVec(0.0f, 0.0f, 1.0f);
+	D3DXMatrixLookAtLH(&ViewMatrix, &vEyePt, &vLookatPt, &vUpVec);
+	pDevice->SetTransform(D3DTS_VIEW, &ViewMatrix);
 }
 
 void DirectXManager::ReleaseDeviceObjects()
 {
-	SafeRelease(pFont);
 	SafeRelease(pSprite);
 
 	SafeRelease(pDevice);
@@ -92,9 +99,4 @@ LPDIRECT3DDEVICE9 DirectXManager::GetDevice() const
 LPD3DXSPRITE DirectXManager::GetSprite() const
 {
 	return pSprite;
-}
-
-LPD3DXFONT DirectXManager::GetFont() const
-{
-	return pFont;
 }

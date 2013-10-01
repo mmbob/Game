@@ -2,6 +2,10 @@
 
 #include <Windows.h>
 
+#include "Engine.h"
+#include "Renderer.h"
+
+
 class GameClient
 {
 	static const wchar_t* WindowClassName;
@@ -12,12 +16,14 @@ class GameClient
 
 	HINSTANCE instance;
 	HWND mainWindow;
+	Engine engine;
 
 	bool InitInstance(HINSTANCE instance);
 	void CreateMainWindow(int width, int height, bool fullScreen);
 	static LRESULT CALLBACK WinProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 public:
 	void Init(HINSTANCE instance);
+	Renderer renderer;
 };
 
 extern GameClient* g_pGameClient;
