@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
 #include "DirectX.h"
 
@@ -10,11 +11,10 @@ class Renderer
 {
 	DirectXManager* pDirectX;
 
+	unordered_map<wstring, LPDIRECT3DTEXTURE9> textureMap;
+
 	LPD3DXFONT pSanityFont;
 	LPD3DXFONT pDayTimeFont;
-
-	LPDIRECT3DTEXTURE9 pBackgroundTexture;
-	LPDIRECT3DTEXTURE9 pSanityTexture;
 
 	wstring sanityText;
 	wstring sanityUpdateText;
@@ -26,11 +26,15 @@ class Renderer
 	RECT dayRect;
 	RECT timeRect;
 
-	void RenderUI();
-	void RenderWorld();
+	void LoadTextures();
+
+	void RenderUI() const;
+	void RenderWorld() const;
 public:
 	void Init(HWND window);
 	void UnInit();
 
-	void Render();
+	LPDIRECT3DTEXTURE9 GetTexture(wstring textureName) const;
+
+	void Render() const;
 };
