@@ -66,8 +66,7 @@ void Renderer::Init(HWND window)
 	SetRect(&timeRect, viewport.Width - timeRect.right - 10, viewport.Height - timeRect.bottom - 10, viewport.Width - 10, viewport.Height - 10);
 	SetRect(&dayRect, timeRect.left - dayRect.right - 10, timeRect.top, timeRect.left - 10, timeRect.bottom);
 
-	D3DXCreateTextureFromFile(pDirectX->GetDevice(), L"Resources\\Sprites\\Background.png", &pBackgroundTexture);
-	D3DXCreateTextureFromFile(pDirectX->GetDevice(), L"Resources\\Sprites\\Sanity.png", &pSanityTexture);
+	LoadTextures();
 }
 
 void Renderer::UnInit()
@@ -76,7 +75,38 @@ void Renderer::UnInit()
 	pDayTimeFont->Release();
 }
 
-void Renderer::RenderUI()
+void Renderer::LoadTextures()
+{
+	WIN32_FIND_DATA findData;
+	HANDLE find = FindFirstFile(L"Resources\\Sprites\\*.png", &findData);
+	if (find != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
+			wstring filePath(L"Resources\\Sprites\\");
+			filePath += findData.cFileName;
+			wstring fileNameNoExtension(findData.cFileName);
+			fileNameNoExtension = fileNameNoExtension.substr(0, fileNameNoExtension.rfind('.'));
+
+			LPDIRECT3DTEXTURE9 pTexture;
+			HRESULT result = D3DXCreateTextureFromFile(pDirectX->GetDevice(), filePath.c_str(), &pTexture);
+			if (SUCCEEDED(result))
+			{
+				textureMap[fileNameNoExtension] = pTexture;
+			}
+		} while (FindNextFile(find, &findData));
+	}
+}
+
+LPDIRECT3DTEXTURE9 Renderer::GetTexture(wstring textureName) const
+{
+	auto iter = textureMap.find(textureName);
+	if (iter == textureMap.end())
+		return nullptr;
+	return iter->second;
+}
+
+void Renderer::RenderUI() const
 {
 	LPD3DXSPRITE pSprite = pDirectX->GetSprite();
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
@@ -89,13 +119,13 @@ void Renderer::RenderUI()
 	D3DXMatrixTransformation2D(&transform, nullptr, 0.0f, nullptr, nullptr, 0.0f, &D3DXVECTOR2(0, 500));
 
 	pSprite->SetTransform(&transform);
-	pSprite->Draw(pBackgroundTexture, nullptr, nullptr, nullptr, 0xFFFFFFFF);
+	pSprite->Draw(GetTexture(L"Background"), nullptr, nullptr, nullptr, 0xFFFFFFFF);
 
 	D3DXMatrixIdentity(&transform);
 	D3DXMatrixTransformation2D(&transform, nullptr, 0.0f, nullptr, nullptr, 0.0f, &D3DXVECTOR2(10, 520));
 
 	pSprite->SetTransform(&transform);
-	pSprite->Draw(pSanityTexture, nullptr, nullptr, nullptr, 0xFFFFFFFF);
+	pSprite->Draw(GetTexture(L"Sanity"), nullptr, nullptr, nullptr, 0xFFFFFFFF);
 
 	pSprite->SetTransform(&oldTransform);
 
@@ -106,20 +136,20 @@ void Renderer::RenderUI()
 
 	RECT transformedRect = sanityUpdateRect;
 
-	pSanityFont->DrawText(pSprite, sanityText.c_str(), -1, &sanityRect, DT_SINGLELINE, 0xFFFFFFFF);
+	pSanityFont->DrawText(pSprite, sanityText.c_str(), -1, const_cast<RECT*>(&sanityRect), DT_SINGLELINE, 0xFFFFFFFF);
 	pSanityFont->DrawText(pSprite, sanityUpdateText.c_str(), -1, &transformedRect, DT_SINGLELINE, D3DCOLOR_ARGB(alpha, 255, 255, 255));
-	pDayTimeFont->DrawText(pSprite, dayText.c_str(), -1, &dayRect, DT_SINGLELINE, 0xFFFFFFFF);
-	pDayTimeFont->DrawText(pSprite, timeText.c_str(), -1, &timeRect, DT_SINGLELINE, 0xFFFFFFFF);
+	pDayTimeFont->DrawText(pSprite, dayText.c_str(), -1, const_cast<RECT*>(&dayRect), DT_SINGLELINE, 0xFFFFFFFF);
+	pDayTimeFont->DrawText(pSprite, timeText.c_str(), -1, const_cast<RECT*>(&timeRect), DT_SINGLELINE, 0xFFFFFFFF);
 
 	pSprite->End();
 }
 
-void Renderer::RenderWorld()
+void Renderer::RenderWorld() const
 {
 	
 }
 
-void Renderer::Render()
+void Renderer::Render() const
 {
 	LPDIRECT3DDEVICE9 pDevice = pDirectX->GetDevice();
 
