@@ -89,6 +89,13 @@ void GameClient::Init(HINSTANCE instance)
 
 	CreateMainWindow(ResolutionX, ResolutionY, false);
 
+	directX.Init();
+	directX.InitDeviceObjects(mainWindow, 800, 600);
 //	engine.Init();
-	renderer.Init(mainWindow);
+	renderer.Init(&directX, mainWindow);
+}
+
+void GameClient::Update()
+{
+	directX.Update();
 }

@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "DirectX.h"
+#include "Player.h"
 
 using namespace std;
 
@@ -31,10 +32,11 @@ class Renderer
 	void RenderUI() const;
 	void RenderWorld() const;
 public:
-	void Init(HWND window);
+	void Init(DirectXManager* pDirectX, HWND window);
 	void UnInit();
 
 	LPDIRECT3DTEXTURE9 GetTexture(wstring textureName) const;
 
-	void Render() const;
+	void Update();
+	void Render(Player* pPlayer) const;
 };

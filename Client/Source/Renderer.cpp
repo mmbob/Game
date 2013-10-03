@@ -3,11 +3,9 @@
 #include <cassert>
 #include <algorithm>
 
-void Renderer::Init(HWND window)
+void Renderer::Init(DirectXManager* pDirectX, HWND window)
 {
-	pDirectX = new DirectXManager;
-	pDirectX->Init();
-	pDirectX->InitDeviceObjects(window, 800, 600);
+	this->pDirectX = pDirectX;
 
 	HDC context = GetDC(window);
 	const int SanityFontHeight = -MulDiv(32, GetDeviceCaps(context, LOGPIXELSY), 72);
@@ -118,14 +116,14 @@ void Renderer::RenderUI() const
 	D3DXMatrixIdentity(&transform);
 	D3DXMatrixTransformation2D(&transform, nullptr, 0.0f, nullptr, nullptr, 0.0f, &D3DXVECTOR2(0, 500));
 
-	pSprite->SetTransform(&transform);
-	pSprite->Draw(GetTexture(L"Background"), nullptr, nullptr, nullptr, 0xFFFFFFFF);
+//	pSprite->SetTransform(&transform);
+	pSprite->Draw(GetTexture(L"Background"), nullptr, nullptr, &D3DXVECTOR3(0.0f, 500.0f, 1.0f), 0xFFFFFFFF);
 
 	D3DXMatrixIdentity(&transform);
 	D3DXMatrixTransformation2D(&transform, nullptr, 0.0f, nullptr, nullptr, 0.0f, &D3DXVECTOR2(10, 520));
 
-	pSprite->SetTransform(&transform);
-	pSprite->Draw(GetTexture(L"Sanity"), nullptr, nullptr, nullptr, 0xFFFFFFFF);
+//	pSprite->SetTransform(&transform);
+	pSprite->Draw(GetTexture(L"Sanity"), nullptr, nullptr, &D3DXVECTOR3(10.0f, 520.0f, 1.0f), 0xFFFFFFFF);
 
 	pSprite->SetTransform(&oldTransform);
 
@@ -149,7 +147,7 @@ void Renderer::RenderWorld() const
 	
 }
 
-void Renderer::Render() const
+void Renderer::Render(Player* pPlayer) const
 {
 	LPDIRECT3DDEVICE9 pDevice = pDirectX->GetDevice();
 
@@ -158,6 +156,9 @@ void Renderer::Render() const
 	if (SUCCEEDED(result = pDevice->BeginScene()))
 	{
 		RenderWorld();
+
+		pDirectX->GetSprite()->Draw(GetTexture(pPlayer->textureName), nullptr, nullptr, &pPlayer->position, 0xFFFFFFFF);
+
 		RenderUI();
 
 		assert(SUCCEEDED(pDevice->EndScene()));
