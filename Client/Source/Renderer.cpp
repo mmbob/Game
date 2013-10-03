@@ -144,10 +144,19 @@ void Renderer::RenderUI() const
 
 void Renderer::RenderWorld() const
 {
-	
+	auto pSprite = pDirectX->GetSprite();
+
+	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
+
+	for (const RenderObject* object : objects)
+	{
+		pSprite->Draw(GetTexture(object->textureName), &object->textureClip, nullptr, &object->position, 0xFFFFFFFF);
+	}
+
+	pSprite->End();
 }
 
-void Renderer::Render(Player* pPlayer) const
+void Renderer::Render() const
 {
 	LPDIRECT3DDEVICE9 pDevice = pDirectX->GetDevice();
 
@@ -157,7 +166,7 @@ void Renderer::Render(Player* pPlayer) const
 	{
 		RenderWorld();
 
-		pDirectX->GetSprite()->Draw(GetTexture(pPlayer->textureName), nullptr, nullptr, &pPlayer->position, 0xFFFFFFFF);
+//		pDirectX->GetSprite()->Draw(GetTexture(pPlayer->textureName), nullptr, nullptr, &pPlayer->position, 0xFFFFFFFF);
 
 		RenderUI();
 
@@ -166,4 +175,12 @@ void Renderer::Render(Player* pPlayer) const
 	}
 	else
 		DebugBreak();
+}
+
+RenderObject* Renderer::CreateRenderObject()
+{
+	RenderObject* pObject = new RenderObject;
+	objects.push_back(pObject);
+
+	return pObject;
 }
