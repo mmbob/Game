@@ -80,6 +80,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Entity.cpp" />
+    <ClCompile Include="Source\Player.cpp" />
     <ClCompile Include="Source\Engine.cpp" />
     <ClCompile Include="Source\Game.cpp" />
     <ClCompile Include="Source\GameWorld.cpp" />
@@ -89,6 +91,8 @@
     <ClCompile Include="Source\WorldGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Entity.h" />
+    <ClInclude Include="Source\Player.h" />
     <ClInclude Include="Source\Engine.h" />
     <ClInclude Include="Source\Game.h" />
     <ClInclude Include="Source\GameWorld.h" />

@@ -68,6 +68,8 @@ void DirectXManager::InitDeviceObjects(HWND window, int width, int height)
 	if (FAILED(hr))
 		DebugBreak();	// fix
 
+	pKeyboard->Acquire();
+
 	D3DXMATRIX World;
 	D3DXMatrixIdentity(&World);
 	pDevice->SetTransform(D3DTS_WORLD, &World);
@@ -86,6 +88,8 @@ void DirectXManager::InitDeviceObjects(HWND window, int width, int height)
 
 void DirectXManager::ReleaseDeviceObjects()
 {
+	pKeyboard->Unacquire();
+
 	SafeRelease(pSprite);
 
 	SafeRelease(pDevice);
@@ -99,4 +103,58 @@ LPDIRECT3DDEVICE9 DirectXManager::GetDevice() const
 LPD3DXSPRITE DirectXManager::GetSprite() const
 {
 	return pSprite;
+}
+
+void DirectXManager::Update()
+{
+	pKeyboard->GetDeviceState(sizeof(keyState), keyState);
+	pMouse->GetDeviceState(sizeof(mouseState), &mouseState);
+
+}
+
+bool DirectXManager::IsKeyPressed(int keyCode) const
+{
+	if (keyState[keyCode] & 0x80)
+		return true;
+	return false;
+}
+
+int DirectXManager::GetMouseX() const
+{
+	return mouseState.lX;
+}
+
+int DirectXManager::GetMouseY() const
+{
+	return mouseState.lY;
+}
+
+int DirectXManager::GetMouseWheel() const
+{
+	return mouseState.lZ;
+}
+
+bool DirectXManager::IsMousePressed(MouseButton button) const
+{
+	switch (button)
+	{
+	case MB_Left:
+		return mouseState.rgbButtons[0] & 0x80;
+		break;
+
+	case MB_Right:
+		return mouseState.rgbButtons[1] & 0x80;
+		break;
+
+	case MB_Middle:
+		return mouseState.rgbButtons[2] & 0x80;
+		break;
+
+	case MB_4:
+		return mouseState.rgbButtons[3] & 0x80;
+		break;
+
+	default:
+		return false;
+	}
 }

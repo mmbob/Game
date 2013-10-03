@@ -23,6 +23,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE instance, LPWSTR, int)
 
 	MSG msg;
 
+	Player player;
+
 	bool quit = false;
 	const int timePerFrame = 1000 / 60;
 	ULONGLONG lastFrame = GetTickCount64();
@@ -41,7 +43,9 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE instance, LPWSTR, int)
 		if (currentFrame - lastFrame < timePerFrame)
 			Sleep(timePerFrame - (currentFrame - lastFrame));
 
-		g_pGameClient->renderer.Render();
+		g_pGameClient->Update();
+
+		g_pGameClient->renderer.Render(&player);
 
 		lastFrame = currentFrame;
 	}
