@@ -2,9 +2,10 @@
 
 #include <string>
 #include <unordered_map>
+#include <list>
 
 #include "DirectX.h"
-#include "Player.h"
+#include "RenderObject.h"
 
 using namespace std;
 
@@ -12,6 +13,7 @@ class Renderer
 {
 	DirectXManager* pDirectX;
 
+	list<RenderObject*> objects;
 	unordered_map<wstring, LPDIRECT3DTEXTURE9> textureMap;
 
 	LPD3DXFONT pSanityFont;
@@ -35,8 +37,10 @@ public:
 	void Init(DirectXManager* pDirectX, HWND window);
 	void UnInit();
 
+	RenderObject* CreateRenderObject();
+
 	LPDIRECT3DTEXTURE9 GetTexture(wstring textureName) const;
 
 	void Update();
-	void Render(Player* pPlayer) const;
+	void Render() const;
 };

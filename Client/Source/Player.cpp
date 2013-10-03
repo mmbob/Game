@@ -1,8 +1,7 @@
 #include "Player.h"
 
-#include "DirectX.h"
-
-Player::Player()
+Player::Player(Renderer* pRenderer)
+	: RenderedEntity(pRenderer)
 {
 	position = D3DXVECTOR3(400, 400, 1.0f);
 	D3DXMatrixIdentity(&rotation);
@@ -10,6 +9,11 @@ Player::Player()
 	velocity = D3DXVECTOR2(0.0f, 0.0f);
 
 	textureName = L"Player";
+}
+
+Player::~Player()
+{
+
 }
 
 void Player::Update(DirectXManager* pDirectX)

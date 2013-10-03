@@ -1,13 +1,15 @@
 #pragma once
 
+#include "Renderer.h"
 #include "Entity.h"
 #include "DirectX.h"
 
-class Player : public Entity
+class Player : public RenderedEntity
 {
 	int sanity;
 public:
-	Player();
+	Player(Renderer* pRenderer);
+	~Player();
 
 	void Update(DirectXManager* pDirectX);
 };
