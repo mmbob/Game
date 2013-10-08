@@ -13,7 +13,7 @@ class Renderer
 {
 	DirectXManager* pDirectX;
 
-	list<RenderObject*> objects;
+	list<IRenderObject*> objects;
 	unordered_map<wstring, LPDIRECT3DTEXTURE9> textureMap;
 
 	LPD3DXFONT pSanityFont;
@@ -37,7 +37,7 @@ public:
 	void Init(DirectXManager* pDirectX, HWND window);
 	void UnInit();
 
-	RenderObject* CreateRenderObject();
+	bool AddRenderObject(IRenderObject* pObject);
 
 	LPDIRECT3DTEXTURE9 GetTexture(wstring textureName) const;
 

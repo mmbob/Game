@@ -10,21 +10,44 @@
 
 using namespace std;
 
-class Entity
+class IEntity
+{
+public:
+	virtual ~IEntity() = 0;
+
+	virtual bool GetPosition(D3DXVECTOR3* pPosition) const = 0;
+	virtual bool GetRotation(D3DXMATRIX* pRotation) const = 0;
+
+	virtual bool SetPosition(const D3DXVECTOR3& position) = 0;
+	virtual bool SetRotation(const D3DXMATRIX& rotation) = 0;
+};
+
+class Entity : public IEntity
 {
 protected:
 	D3DXVECTOR3 position;
 	D3DXMATRIX rotation;
 	D3DXVECTOR2 velocity;
 public:
-	virtual ~Entity();
+	Entity();
+
+	virtual bool GetPosition(D3DXVECTOR3* pPosition) const;
+	virtual bool GetRotation(D3DXMATRIX* pRotation) const;
+	virtual bool GetVelocity(D3DXVECTOR2* pVelocity) const;
+
+	virtual bool SetPosition(const D3DXVECTOR3& position);
+	virtual bool SetRotation(const D3DXMATRIX& rotation);
+	virtual bool SetVelocity(const D3DXVECTOR2& velocity);
 };
 
-class RenderedEntity : Entity
+class RenderedEntity : public Entity
 {
 protected:
 	RenderObject* pRenderObject;
 public:
 	RenderedEntity(Renderer* pRenderer);
 	virtual ~RenderedEntity();
+
+	virtual bool SetPosition(const D3DXVECTOR3& position);
+	virtual bool SetRotation(const D3DXMATRIX& rotation);
 };

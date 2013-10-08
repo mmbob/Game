@@ -18,16 +18,22 @@ class GameClient
 	HWND mainWindow;
 	Engine engine;
 	DirectXManager directX;
+	Renderer renderer;
+	Player player;
 
 	bool InitInstance(HINSTANCE instance);
 	void CreateMainWindow(int width, int height, bool fullScreen);
+	void Update();
+	void Render();
+	void Input();
+
 	static LRESULT CALLBACK WinProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 public:
+	GameClient();
+
 	void Init(HINSTANCE instance);
 
-	void Update();
-
-	Renderer renderer;
+	int MainLoop();
 };
 
 extern GameClient* g_pGameClient;

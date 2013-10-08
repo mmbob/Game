@@ -7,6 +7,8 @@
 class Player : public RenderedEntity
 {
 	int sanity;
+	float maxSpeed;
+	D3DXVECTOR2 acceleration;
 public:
 	Player(Renderer* pRenderer);
 	~Player();

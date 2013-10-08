@@ -1,14 +1,13 @@
 #include "Player.h"
 
-Player::Player(Renderer* pRenderer)
-	: RenderedEntity(pRenderer)
-{
-	position = D3DXVECTOR3(400, 400, 1.0f);
-	D3DXMatrixIdentity(&rotation);
-	D3DXMatrixAffineTransformation2D(&rotation, 1.0f, nullptr, 0.0f, &D3DXVECTOR2(375, 225));
-	velocity = D3DXVECTOR2(0.0f, 0.0f);
+#include <algorithm>
 
-	textureName = L"Player";
+Player::Player(Renderer* pRenderer)
+	: RenderedEntity(pRenderer), sanity(0), maxSpeed(8.0f), acceleration(0.0f, 0.0f)
+{
+	RECT clip = { 0, 0, -1, -1 };
+	pRenderObject->SetTextureName(L"Player");
+	pRenderObject->SetTextureClip(clip);
 }
 
 Player::~Player()
@@ -18,17 +17,25 @@ Player::~Player()
 
 void Player::Update(DirectXManager* pDirectX)
 {
+	const float accelValue = 1.0f;
 	bool left = pDirectX->IsKeyPressed(DIK_A);
 	bool up = pDirectX->IsKeyPressed(DIK_W);
 	bool right = pDirectX->IsKeyPressed(DIK_D);
 	bool down = pDirectX->IsKeyPressed(DIK_S);
 
+	acceleration = D3DXVECTOR2(0.0f, 0.0f);
+
 	if (left && !right)
-		position.x -= 4;
-	else if (up && !down)
-		position.y -= 4;
+		acceleration.x = -accelValue;
 	else if (right && !left)
-		position.x += 4;
+		acceleration.x = accelValue;
+	if (up && !down)
+		acceleration.y = -accelValue;
 	else if (down && !up)
-		position.y += 4;
+		acceleration.y = accelValue;
+
+	velocity *= 0.9f;
+
+	velocity.x = std::min<float>(std::max<float>(velocity.x + acceleration.x, -maxSpeed), maxSpeed);
+	velocity.y = std::min<float>(std::max<float>(velocity.y + acceleration.y, -maxSpeed), maxSpeed);
 }

@@ -89,6 +89,7 @@
     <ClCompile Include="Source\Player.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\RenderObject.cpp" />
+    <ClCompile Include="Source\SanityCrystal.cpp" />
     <ClCompile Include="Source\WorldGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -100,6 +101,7 @@
     <ClInclude Include="Source\Player.h" />
     <ClInclude Include="Source\Renderer.h" />
     <ClInclude Include="Source\RenderObject.h" />
+    <ClInclude Include="Source\SanityCrystal.h" />
     <ClInclude Include="Source\WorldGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
