@@ -182,7 +182,7 @@ void Renderer::Render() const
 {
 	LPDIRECT3DDEVICE9 pDevice = pDirectX->GetDevice();
 
-	HRESULT result = pDevice->Clear(0, 0, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
+	HRESULT result = pDevice->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
 
 	if (SUCCEEDED(result = pDevice->BeginScene()))
 	{
@@ -190,11 +190,15 @@ void Renderer::Render() const
 
 		RenderUI();
 
-		assert(SUCCEEDED(pDevice->EndScene()));
+		result = pDevice->EndScene();
+		assert(SUCCEEDED(result));
+
 		pDevice->Present(nullptr, nullptr, nullptr, nullptr);
 	}
 	else
-		DebugBreak();
+	{
+		assert(true);
+	}
 }
 
 bool Renderer::AddRenderObject(IRenderObject* pObject)
