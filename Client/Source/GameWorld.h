@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Windows.h>
 #include <string>
 
 struct TileFlags
@@ -14,8 +15,7 @@ struct TileFlags
 struct Tile
 {
 	std::string TextureName;
-	float TextureU;
-	float TextureV;
+	RECT TextureClip;
 	TileFlags::Value Flags;
 };
 

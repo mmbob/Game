@@ -109,23 +109,8 @@ void Renderer::RenderUI() const
 	LPD3DXSPRITE pSprite = pDirectX->GetSprite();
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
 
-	D3DXMATRIX oldTransform;
-	pSprite->GetTransform(&oldTransform);
-
-	D3DXMATRIX transform;
-	D3DXMatrixIdentity(&transform);
-	D3DXMatrixTransformation2D(&transform, nullptr, 0.0f, nullptr, nullptr, 0.0f, &D3DXVECTOR2(0, 500));
-
-//	pSprite->SetTransform(&transform);
-	pSprite->Draw(GetTexture(L"Background"), nullptr, nullptr, &D3DXVECTOR3(0.0f, 500.0f, 1.0f), 0xFFFFFFFF);
-
-	D3DXMatrixIdentity(&transform);
-	D3DXMatrixTransformation2D(&transform, nullptr, 0.0f, nullptr, nullptr, 0.0f, &D3DXVECTOR2(10, 520));
-
-//	pSprite->SetTransform(&transform);
-	pSprite->Draw(GetTexture(L"Sanity"), nullptr, nullptr, &D3DXVECTOR3(10.0f, 520.0f, 1.0f), 0xFFFFFFFF);
-
-	pSprite->SetTransform(&oldTransform);
+	pSprite->Draw(GetTexture(L"Background"), nullptr, nullptr, &D3DXVECTOR3(0.0f, 500.0f, 0.0f), 0xFFFFFFFF);
+	pSprite->Draw(GetTexture(L"Sanity"), nullptr, nullptr, &D3DXVECTOR3(10.0f, 520.0f, 0.0f), 0xFFFFFFFF);
 
 	static int alpha = 255;
 	alpha -= 2;
@@ -148,10 +133,47 @@ void Renderer::RenderWorld() const
 
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
 
-	for (const RenderObject* object : objects)
+	D3DXMATRIX oldTransform;
+	pSprite->GetTransform(&oldTransform);
+
+	for (IRenderObject* object : objects)
 	{
-		pSprite->Draw(GetTexture(object->textureName), &object->textureClip, nullptr, &object->position, 0xFFFFFFFF);
+		RECT clip;
+		object->GetTextureClip(&clip);
+
+		wstring name;
+		object->GetTextureName(&name);
+		if (clip.right == -1 || clip.bottom == -1)
+		{
+			LPDIRECT3DTEXTURE9 pTexture = GetTexture(name);
+			if (pTexture != nullptr)
+			{
+				D3DSURFACE_DESC desc;
+				pTexture->GetLevelDesc(0, &desc);
+
+				clip.right = desc.Width;
+				clip.bottom = desc.Height;
+			}
+			else
+			{
+				clip.right = 1;
+				clip.bottom = 1;
+			}
+
+			object->SetTextureClip(clip);
+		}
+
+		D3DXMATRIX rotation;
+		object->GetRotation(&rotation);
+
+		D3DXVECTOR3 position;
+		object->GetPosition(&position);
+
+		pSprite->SetTransform(&rotation);
+		pSprite->Draw(GetTexture(name), &clip, nullptr, &position, 0xFFFFFFFF);
 	}
+
+	pSprite->SetTransform(&oldTransform);
 
 	pSprite->End();
 }
@@ -166,8 +188,6 @@ void Renderer::Render() const
 	{
 		RenderWorld();
 
-//		pDirectX->GetSprite()->Draw(GetTexture(pPlayer->textureName), nullptr, nullptr, &pPlayer->position, 0xFFFFFFFF);
-
 		RenderUI();
 
 		assert(SUCCEEDED(pDevice->EndScene()));
@@ -177,10 +197,8 @@ void Renderer::Render() const
 		DebugBreak();
 }
 
-RenderObject* Renderer::CreateRenderObject()
+bool Renderer::AddRenderObject(IRenderObject* pObject)
 {
-	RenderObject* pObject = new RenderObject;
 	objects.push_back(pObject);
-
-	return pObject;
+	return true;
 }

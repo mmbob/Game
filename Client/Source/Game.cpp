@@ -3,10 +3,17 @@
 #include <windowsx.h>
 #include <cassert>
 
+#include "SanityCrystal.h"
+
 const wchar_t* GameClient::WindowClassName = L"fa3a766d-cc01-4644-98fe-fa9008e7a20d";
 const wchar_t* GameClient::WindowTitle = L"Nightmares";
 
 GameClient* g_pGameClient = nullptr;
+
+GameClient::GameClient() : renderer(), player(&renderer)
+{
+	srand(GetTickCount());
+}
 
 bool GameClient::InitInstance(HINSTANCE instance)
 {
@@ -32,6 +39,7 @@ bool GameClient::InitInstance(HINSTANCE instance)
 	wc.lpszClassName = WindowClassName;
 	wc.style = CS_DBLCLKS;
 	wc.lpfnWndProc = WinProc;
+	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wc.hbrBackground = GetStockBrush(BLACK_BRUSH);
 
 	bool success = (RegisterClassEx(&wc) != 0);
@@ -91,11 +99,70 @@ void GameClient::Init(HINSTANCE instance)
 
 	directX.Init();
 	directX.InitDeviceObjects(mainWindow, 800, 600);
-//	engine.Init();
+
+	player.SetPosition(D3DXVECTOR3(400.0f, 400.0f, 0.5f));
+
+	engine.Init();
+	engine.AddEntity(&player, EntityType::Dynamic);
+
+	SanityCrystal** crystals = new SanityCrystal*[3];
+	for (int i = 0; i < 3; ++i)
+	{
+		crystals[i] = new SanityCrystal(&renderer);
+		crystals[i]->SetPosition(D3DXVECTOR3(float(rand() % 750), float(rand() % 450), 1.0f));
+
+		engine.AddEntity(crystals[i], EntityType::Static);
+	}
+
 	renderer.Init(&directX, mainWindow);
+}
+
+void GameClient::Input()
+{
+	directX.Update();
 }
 
 void GameClient::Update()
 {
-	directX.Update();
+	player.Update(&directX);
+	engine.Update();
+
+	
+}
+
+void GameClient::Render()
+{
+	renderer.Render();
+}
+
+int GameClient::MainLoop()
+{
+	MSG msg;
+
+	bool quit = false;
+	const int timePerFrame = 1000 / 60;
+	ULONGLONG lastFrame = GetTickCount64();
+	while (!quit)
+	{
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+
+		if (msg.message == WM_QUIT)
+			break;
+
+		ULONGLONG currentFrame = GetTickCount64();
+		if (currentFrame - lastFrame < timePerFrame)
+			Sleep(timePerFrame - (currentFrame - lastFrame));
+
+		Input();
+		Update();
+		Render();
+
+		lastFrame = currentFrame;
+	}
+
+	return msg.wParam;
 }

@@ -17,40 +17,10 @@ using namespace std;
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE instance, LPWSTR, int)
 {
-	g_pGameClient = new GameClient();
+	g_pGameClient = new GameClient;
 
 	g_pGameClient->Init(instance);
+	int returnCode = g_pGameClient->MainLoop();
 
-	MSG msg;
-
-	Player player;
-
-	bool quit = false;
-	const int timePerFrame = 1000 / 60;
-	ULONGLONG lastFrame = GetTickCount64();
-	while (!quit)
-	{
-		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-
-		if (msg.message == WM_QUIT)
-			break;
-
-		ULONGLONG currentFrame = GetTickCount64();
-		if (currentFrame - lastFrame < timePerFrame)
-			Sleep(timePerFrame - (currentFrame - lastFrame));
-
-		g_pGameClient->Update();
-
-		g_pGameClient->renderer.Render(&player);
-
-		lastFrame = currentFrame;
-	}
-
-//	delete g_pGameClient;
-
-	return msg.wParam;
+	return returnCode;
 }
