@@ -1,12 +1,9 @@
 #pragma once
 
-#include <list>
+#include <Box2D/Box2D.h>
 
 #include "GameWorld.h"
 #include "Entity.h"
-#include "Player.h"
-
-using namespace std;
 
 struct EntityType
 {
@@ -20,8 +17,8 @@ struct EntityType
 class Engine
 {
 	GameWorld world;
-	list<Entity*> staticEntities;
-	list<Entity*> dynamicEntities;
+	std::unique_ptr<b2World> physics;
+	std::unique_ptr<b2Body> worldBody;
 public:
 	void Init();
 	void UnInit();
