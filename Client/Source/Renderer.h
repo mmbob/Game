@@ -16,6 +16,8 @@ class Renderer
 	list<IRenderObject*> objects;
 	unordered_map<wstring, LPDIRECT3DTEXTURE9> textureMap;
 
+	D3DXVECTOR2 cameraPosition;
+
 	LPD3DXFONT pSanityFont;
 	LPD3DXFONT pDayTimeFont;
 
@@ -33,6 +35,7 @@ class Renderer
 
 	void RenderUI() const;
 	void RenderWorld() const;
+	void RenderTiles() const;
 public:
 	void Init(DirectXManager* pDirectX, HWND window);
 	void UnInit();

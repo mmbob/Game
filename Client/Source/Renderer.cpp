@@ -1,7 +1,10 @@
 #include "Renderer.h"
 
+#include <array>
 #include <cassert>
 #include <algorithm>
+
+#include "GameWorld.h"
 
 void Renderer::Init(DirectXManager* pDirectX, HWND window)
 {
@@ -127,6 +130,41 @@ void Renderer::RenderUI() const
 	pSprite->End();
 }
 
+void Renderer::RenderTiles() const
+{
+	auto pSprite = pDirectX->GetSprite();
+
+	LPDIRECT3DTEXTURE9 tileSets[] = 
+	{
+		GetTexture(L"Tiles1"),
+	};
+
+	GameWorld* pWorld;
+	array<WorldChunk, 4> chunksToRender =
+	{
+		pWorld->GetChunk(int(cameraPosition.x), int(cameraPosition.y)),
+		pWorld->GetChunk(int(cameraPosition.x + 1), int(cameraPosition.y)),
+		pWorld->GetChunk(int(cameraPosition.x), int(cameraPosition.y + 1)),
+		pWorld->GetChunk(int(cameraPosition.x + 1), int(cameraPosition.y + 1)),
+	};
+
+	D3DXVECTOR2 cameraOffset = cameraPosition - D3DXVECTOR2(int(cameraPosition.x), int(cameraPosition.y));
+	cameraOffset *= (64 * WorldChunk::ChunkSize);
+
+	for (const WorldChunk chunk : chunksToRender)
+	{
+		for (int x = 0; x < chunk.ChunkSize; ++x)
+		{
+			for (int y = 0; y < chunk.ChunkSize; ++y)
+			{
+				auto tile = chunk.GetTile(x, y);
+
+				pSprite->Draw(tileSets[tile.Tileset], &tile.TextureClip, nullptr, &D3DXVECTOR3(x * 64 - cameraOffset.x, y * 64 - cameraOffset.y, 1.0f), 0xFFFFFFFF);
+			}
+		}
+	}
+}
+
 void Renderer::RenderWorld() const
 {
 	auto pSprite = pDirectX->GetSprite();
@@ -135,6 +173,8 @@ void Renderer::RenderWorld() const
 
 	D3DXMATRIX oldTransform;
 	pSprite->GetTransform(&oldTransform);
+
+	RenderTiles();
 
 	for (IRenderObject* object : objects)
 	{
@@ -182,7 +222,7 @@ void Renderer::Render() const
 {
 	LPDIRECT3DDEVICE9 pDevice = pDirectX->GetDevice();
 
-	HRESULT result = pDevice->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
+	HRESULT result = pDevice->Clear(0, 0, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
 
 	if (SUCCEEDED(result = pDevice->BeginScene()))
 	{
@@ -190,15 +230,11 @@ void Renderer::Render() const
 
 		RenderUI();
 
-		result = pDevice->EndScene();
-		assert(SUCCEEDED(result));
-
+		assert(SUCCEEDED(pDevice->EndScene()));
 		pDevice->Present(nullptr, nullptr, nullptr, nullptr);
 	}
 	else
-	{
-		assert(true);
-	}
+		DebugBreak();
 }
 
 bool Renderer::AddRenderObject(IRenderObject* pObject)

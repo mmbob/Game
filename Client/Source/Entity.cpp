@@ -27,12 +27,6 @@ bool Entity::GetVelocity(D3DXVECTOR2* pVelocity) const
 	return true;
 }
 
-bool Entity::GetFlags(int* pFlags) const
-{
-	*pFlags = flags;
-	return true;
-}
-
 bool Entity::SetPosition(const D3DXVECTOR3& position)
 {
 	this->position = position;
@@ -48,12 +42,6 @@ bool Entity::SetRotation(const D3DXMATRIX& rotation)
 bool Entity::SetVelocity(const D3DXVECTOR2& velocity)
 {
 	this->velocity = velocity;
-	return true;
-}
-
-bool Entity::SetFlags(int flags)
-{
-	this->flags = flags;
 	return true;
 }
 

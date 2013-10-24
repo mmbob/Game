@@ -5,8 +5,9 @@
 class WorldGenerator
 {
 protected:
-	virtual bool GenerateChunk(GameWorld& world, int x, int y, WorldChunk* chunk, );
 public:
 	WorldGenerator();
 	virtual ~WorldGenerator();
+
+	virtual bool GenerateChunk(const GameWorld& world, int x, int y, WorldChunk* chunk);
 };
