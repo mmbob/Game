@@ -14,4 +14,6 @@ public:
 	~Player();
 
 	void Update(DirectXManager* pDirectX);
+
+	int GetSanity() const;
 };

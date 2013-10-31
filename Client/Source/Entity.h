@@ -43,9 +43,9 @@ public:
 class RenderedEntity : public Entity
 {
 protected:
-	RenderObject* pRenderObject;
+	std::unique_ptr<IRenderObject> renderObject;
 public:
-	RenderedEntity(Renderer* pRenderer);
+	RenderedEntity(Renderer* pRenderer, std::unique_ptr<IRenderObject> renderObject);
 	virtual ~RenderedEntity();
 
 	virtual bool SetPosition(const D3DXVECTOR3& position);

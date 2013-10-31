@@ -5,6 +5,9 @@
 IRenderObject::~IRenderObject()
 { }
 
+void IRenderObject::Render(LPD3DXSPRITE pSprite) const
+{ }
+
 RenderObject::RenderObject(Renderer* pParent)
 	: pParent(pParent), position(0.0f, 0.0f, 0.0f)
 {
@@ -35,37 +38,57 @@ bool RenderObject::SetRotation(const D3DXMATRIX& rotation)
 	return true;
 }
 
-/*TextureRenderObject::TextureRenderObject(Renderer* pParent)
-	: RenderObject(pParent)
-{ }*/
+void RenderObject::Render(LPD3DXSPRITE pSprite) const
+{ }
 
-bool RenderObject::GetTextureName(wstring* pName) const
+TextureRenderObject::TextureRenderObject(Renderer* pParent)
+	: RenderObject(pParent)
+{ }
+
+TextureRenderObject::~TextureRenderObject()
+{ }
+
+bool TextureRenderObject::GetTextureName(wstring* pName) const
 {
 	*pName = textureName;
 	return true;
 }
 
-bool RenderObject::GetTextureClip(RECT* pClip) const
+bool TextureRenderObject::GetTextureClip(RECT* pClip) const
 {
 	*pClip = textureClip;
 	return true;
 }
 
-bool RenderObject::SetTextureName(const wstring& name)
+bool TextureRenderObject::SetTextureName(const wstring& name)
 {
 	textureName = name;
 	return true;
 }
 
-bool RenderObject::SetTextureClip(const RECT& clip)
+bool TextureRenderObject::SetTextureClip(const RECT& clip)
 {
 	textureClip = clip;
 	return true;
 }
 
-/*TextRenderObject::TextRenderObject(Renderer* pParent)
-	: RenderObject(pParent)
+RenderObjectType::Value TextureRenderObject::GetType() const
+{
+	return RenderObjectType::Texture;
+}
+
+TextRenderObject::TextRenderObject(Renderer* pParent)
+: RenderObject(pParent), pFont(nullptr), format(0), color(D3DCOLOR_XRGB(0, 0, 0))
 { }
+
+TextRenderObject::~TextRenderObject()
+{ }
+
+bool TextRenderObject::GetFont(LPD3DXFONT* ppFont) const
+{
+	*ppFont = pFont;
+	return true;
+}
 
 bool TextRenderObject::GetText(wstring* pText) const
 {
@@ -79,6 +102,24 @@ bool TextRenderObject::GetColor(D3DCOLOR* pColor) const
 	return true;
 }
 
+bool TextRenderObject::GetRect(RECT* pRect) const
+{
+	*pRect = rect;
+	return true;
+}
+
+bool TextRenderObject::GetFormat(DWORD* pFormat) const
+{
+	*pFormat = format;
+	return true;
+}
+
+bool TextRenderObject::SetFont(LPD3DXFONT pFont)
+{
+	this->pFont = pFont;
+	return true;
+}
+
 bool TextRenderObject::SetText(const wstring& text)
 {
 	this->text = text;
@@ -89,4 +130,21 @@ bool TextRenderObject::SetColor(D3DCOLOR color)
 {
 	this->color = color;
 	return true;
-}*/
+}
+
+bool TextRenderObject::SetRect(const RECT& rect)
+{
+	this->rect = rect;
+	return true;
+}
+
+bool TextRenderObject::SetFormat(DWORD format)
+{
+	this->format = format;
+	return true;
+}
+
+RenderObjectType::Value TextRenderObject::GetType() const
+{
+	return RenderObjectType::Text;
+}

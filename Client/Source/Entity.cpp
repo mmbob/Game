@@ -45,10 +45,10 @@ bool Entity::SetVelocity(const D3DXVECTOR2& velocity)
 	return true;
 }
 
-RenderedEntity::RenderedEntity(Renderer* pRenderer)
+RenderedEntity::RenderedEntity(Renderer* pRenderer, std::unique_ptr<IRenderObject> renderObject)
+: renderObject(renderObject.release())
 {
-	pRenderObject = new RenderObject(pRenderer);
-	pRenderer->AddRenderObject(pRenderObject);
+	pRenderer->AddRenderObject(this->renderObject.get());
 }
 
 RenderedEntity::~RenderedEntity()
@@ -59,13 +59,13 @@ RenderedEntity::~RenderedEntity()
 bool RenderedEntity::SetPosition(const D3DXVECTOR3& position)
 {
 	Entity::SetPosition(position);
-	pRenderObject->SetPosition(position);
+	renderObject->SetPosition(position);
 	return true;
 }
 
 bool RenderedEntity::SetRotation(const D3DXMATRIX& rotation)
 {
 	Entity::SetRotation(rotation);
-	pRenderObject->SetRotation(rotation);
+	renderObject->SetRotation(rotation);
 	return true;
 }

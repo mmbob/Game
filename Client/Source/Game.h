@@ -5,7 +5,6 @@
 #include "Engine.h"
 #include "Renderer.h"
 
-
 class GameClient
 {
 	static const wchar_t* WindowClassName;
@@ -21,17 +20,26 @@ class GameClient
 	Renderer renderer;
 	Player player;
 
+	std::unordered_map<std::wstring, LPD3DXFONT> fonts;
+	std::unordered_map<std::wstring, IRenderObject*> uiElements;
+
+	float gameTime;
+
 	bool InitInstance(HINSTANCE instance);
+	void InitFonts();
 	void CreateMainWindow(int width, int height, bool fullScreen);
-	void Update();
-	void Render();
-	void Input();
+	void Update(float timeElapsed);
+	void Render(float timeElapsed);
+	void Input(float timeElapsed);
 
 	static LRESULT CALLBACK WinProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 public:
 	GameClient();
 
 	void Init(HINSTANCE instance);
+	void UnInit();
+
+	float GetGameTime() const;
 
 	int MainLoop();
 };

@@ -80,6 +80,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Util.cpp" />
     <ClCompile Include="Source\Entity.cpp" />
     <ClCompile Include="Source\Engine.cpp" />
     <ClCompile Include="Source\Game.cpp" />
@@ -93,6 +94,7 @@
     <ClCompile Include="Source\WorldGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Util.h" />
     <ClInclude Include="Source\Engine.h" />
     <ClInclude Include="Source\Entity.h" />
     <ClInclude Include="Source\Game.h" />
@@ -102,6 +104,7 @@
     <ClInclude Include="Source\Renderer.h" />
     <ClInclude Include="Source\RenderObject.h" />
     <ClInclude Include="Source\SanityCrystal.h" />
+    <ClInclude Include="Source\TileDefs.h" />
     <ClInclude Include="Source\WorldGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

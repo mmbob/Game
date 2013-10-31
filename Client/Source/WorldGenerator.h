@@ -2,6 +2,9 @@
 
 #include "GameWorld.h"
 
+class GameWorld;
+struct WorldChunk;
+
 class WorldGenerator
 {
 protected:

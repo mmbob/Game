@@ -36,6 +36,8 @@ struct WorldChunk
 	void SetTile(int x, int y, const Tile& tile);
 };
 
+class WorldGenerator;
+
 class GameWorld
 {
 	static const int WorldSize = 40;		// The world is a WorldSize x WorldSize square

@@ -2,13 +2,7 @@
 #include <cassert>
 
 #include "DirectX.h"
-
-template <typename T>
-void SafeRelease(T* p)
-{
-	if (p != nullptr)
-		p->Release();
-}
+#include "Util.h"
 
 void DirectXManager::Init()
 {
@@ -18,8 +12,10 @@ void DirectXManager::Init()
 	assert(pDirectX != nullptr);
 	assert(SUCCEEDED(result));
 
-	pInput->CreateDevice(GUID_SysMouse, &pMouse, nullptr);
-	pInput->CreateDevice(GUID_SysKeyboard, &pKeyboard, nullptr);
+	result = pInput->CreateDevice(GUID_SysMouse, &pMouse, nullptr);
+	assert(SUCCEEDED(result));
+	result = pInput->CreateDevice(GUID_SysKeyboard, &pKeyboard, nullptr);
+	assert(SUCCEEDED(result));
 }
 
 void DirectXManager::UnInit()
@@ -68,27 +64,26 @@ void DirectXManager::InitDeviceObjects(HWND window, int width, int height)
 	if (FAILED(hr))
 		DebugBreak();	// fix
 
-	pKeyboard->Acquire();
+	D3DXMATRIX world;
+	D3DXMatrixIdentity(&world);
+	pDevice->SetTransform(D3DTS_WORLD, &world);
 
-	D3DXMATRIX World;
-	D3DXMatrixIdentity(&World);
-	pDevice->SetTransform(D3DTS_WORLD, &World);
+	D3DXMATRIX projection;
+	D3DXMatrixPerspectiveFovLH(&projection, D3DX_PI / 4, float(width) / float(height), 0.0f, 100.0f);
+	pDevice->SetTransform(D3DTS_PROJECTION, &projection);
 
-	D3DXMATRIX ProjMatrix;
-	D3DXMatrixPerspectiveFovLH(&ProjMatrix, D3DX_PI / 4, float(width) / float(height), 0.0f, 100.0f);
-	pDevice->SetTransform(D3DTS_PROJECTION, &ProjMatrix);
-
-	D3DXMATRIX ViewMatrix;
-	D3DXVECTOR3 vEyePt(0.0f, 0.0f, 0.0f);
-	D3DXVECTOR3 vLookatPt(0.0f, 0.0f, 0.0f);
-	D3DXVECTOR3 vUpVec(0.0f, 0.0f, 1.0f);
-	D3DXMatrixLookAtLH(&ViewMatrix, &vEyePt, &vLookatPt, &vUpVec);
-	pDevice->SetTransform(D3DTS_VIEW, &ViewMatrix);
+	D3DXMATRIX view;
+	D3DXVECTOR3 eyePoint(0.0f, 0.0f, 0.0f);
+	D3DXVECTOR3 lookAtPoint(0.0f, 0.0f, 0.0f);
+	D3DXVECTOR3 upVector(0.0f, 0.0f, 1.0f);
+	D3DXMatrixLookAtLH(&view, &eyePoint, &lookAtPoint, &upVector);
+	pDevice->SetTransform(D3DTS_VIEW, &view);
 }
 
 void DirectXManager::ReleaseDeviceObjects()
 {
 	pKeyboard->Unacquire();
+	pMouse->Unacquire();
 
 	SafeRelease(pSprite);
 
@@ -107,9 +102,25 @@ LPD3DXSPRITE DirectXManager::GetSprite() const
 
 void DirectXManager::Update()
 {
-	pKeyboard->GetDeviceState(sizeof(keyState), keyState);
-	pMouse->GetDeviceState(sizeof(mouseState), &mouseState);
+	HRESULT result;
 
+	result = pKeyboard->Poll();
+	if (FAILED(result))
+	{
+		while (pKeyboard->Acquire() == DIERR_INPUTLOST);
+		return;
+	}
+	result = pKeyboard->GetDeviceState(sizeof(keyState), keyState);
+	assert(SUCCEEDED(result));
+
+	result = pMouse->Poll();
+	if (FAILED(result))
+	{
+		while (pMouse->Acquire() == DIERR_INPUTLOST);
+		return;
+	}
+	result = pMouse->GetDeviceState(sizeof(mouseState), &mouseState);
+	assert(SUCCEEDED(result));
 }
 
 bool DirectXManager::IsKeyPressed(int keyCode) const

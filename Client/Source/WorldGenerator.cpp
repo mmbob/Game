@@ -22,6 +22,12 @@ int tileData0[WorldChunk::ChunkSize][WorldChunk::ChunkSize] =
 	{ TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1, TileName::Ground1 },
 };
 
+WorldGenerator::WorldGenerator()
+{ }
+
+WorldGenerator::~WorldGenerator()
+{ }
+
 bool WorldGenerator::GenerateChunk(const GameWorld& world, int x, int y, WorldChunk* pChunk)
 {
 	WorldChunk& chunk = *pChunk;
