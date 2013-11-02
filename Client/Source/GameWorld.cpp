@@ -2,27 +2,23 @@
 
 #include <cassert>
 
-#include "Util.h"
+#include "TileFileParser.h"
+
+#pragma comment(lib, "libjsond.lib")
 
 void GameWorld::Init(std::unique_ptr<WorldGenerator> generator)
 {
 	this->generator = std::unique_ptr<WorldGenerator>(generator.release());
 
-	tileList[TileName::Ground1].Tileset = 0;
-	tileList[TileName::Ground1].TextureClip = Rect(64, 0, 128, 64);
-	tileList[TileName::Ground1].Flags = 0;
+	TileFileParser fileParser(this);
+	fileParser.LoadFile(L"Resources\\Data\\Tiles.json");
+}
 
-	tileList[TileName::Ground2].Tileset = 0;
-	tileList[TileName::Ground2].TextureClip = Rect(128, 0, 192, 64);
-	tileList[TileName::Ground2].Flags = 0;
-
-	tileList[TileName::Ground3].Tileset = 0;
-	tileList[TileName::Ground3].TextureClip = Rect(192, 0, 256, 64);
-	tileList[TileName::Ground3].Flags = 0;
-
-	tileList[TileName::Ground4].Tileset = 0;
-	tileList[TileName::Ground4].TextureClip = Rect(256, 0, 256 + 64, 64);
-	tileList[TileName::Ground4].Flags = 0;
+const Tile& GameWorld::GetTile(int layer, int x, int y) const
+{
+	const WorldChunk& chunk = GetChunk(x / WorldChunk::ChunkSize, y / WorldChunk::ChunkSize);
+	
+	return chunk.GetTile(layer, x % WorldChunk::ChunkSize, y % WorldChunk::ChunkSize);
 }
 
 const WorldChunk& GameWorld::GetChunk(int x, int y) const

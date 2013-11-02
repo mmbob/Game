@@ -62,36 +62,23 @@ void Renderer::RenderTiles(const D3DXMATRIX& positionTransform) const
 	D3DXVECTOR3 worldUpperLeft;
 	ScreenToWorld(screenUpperLeft, &worldUpperLeft);
 
-	int divisor = WorldChunk::ChunkSize;
+	D3DXVECTOR2 screenLowerRight(float(gameArea.right), float(gameArea.bottom));
+	D3DXVECTOR3 worldLowerRight;
+	ScreenToWorld(screenLowerRight, &worldLowerRight);
 
-	POINT chunkPositions[4] =
+	for (int layer = 0; layer < 2; ++layer)
 	{
-		{ int(worldUpperLeft.x / divisor), int(worldUpperLeft.y / divisor) },
-		{ int(worldUpperLeft.x / divisor + 1), int(worldUpperLeft.y / divisor) },
-		{ int(worldUpperLeft.x / divisor), int(worldUpperLeft.y / divisor + 1) },
-		{ int(worldUpperLeft.x / divisor + 1), int(worldUpperLeft.y / divisor + 1) },
-	};
-
-	for (size_t i = 0; i < 4; ++i)
-	{
-		const WorldChunk& chunk = gameWorld->GetChunk(chunkPositions[i].x, chunkPositions[i].y);
-
-		int chunkX = chunkPositions[i].x * WorldChunk::ChunkSize;
-		int chunkY = chunkPositions[i].y * WorldChunk::ChunkSize;
-		for (int layer = 0; layer < chunk.GetLayerCount(); ++layer)
+		for (int x = int(worldUpperLeft.x); x <= int(worldLowerRight.x); ++x)
 		{
-			for (int x = 0; x < chunk.ChunkSize; ++x)
+			for (int y = int(worldUpperLeft.y); y <= int(worldLowerRight.y); ++y)
 			{
-				for (int y = 0; y < chunk.ChunkSize; ++y)
-				{
-					auto tile = chunk.GetTile(layer, x, y);
+				auto tile = gameWorld->GetTile(layer, x, y);
 
-					D3DXVECTOR3 rawPosition(float(chunkX + x), float(chunkY + y), 1.0f);
-					D3DXVECTOR4 position;
-					D3DXVec3Transform(&position, &rawPosition, &positionTransform);
+				D3DXVECTOR3 rawPosition(float(x), float(y), 1.0f);
+				D3DXVECTOR4 position;
+				D3DXVec3Transform(&position, &rawPosition, &positionTransform);
 
-					pSprite->Draw(tileSets[tile.Tileset], &tile.TextureClip, nullptr, &D3DXVECTOR3(position.x, position.y, rawPosition.z), ambientColor);
-				}
+				pSprite->Draw(tileSets[tile.Tileset], &tile.TextureClip, nullptr, &D3DXVECTOR3(position.x, position.y, rawPosition.z), ambientColor);
 			}
 		}
 	}

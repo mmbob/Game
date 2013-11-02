@@ -4,6 +4,7 @@ struct TileName
 {
 	enum Value
 	{
+		Blank = 255,
 		Ground1 = 0,
 		Ground2 = 1,
 		Ground3 = 2,
@@ -26,7 +27,10 @@ struct TileName
 		FenceSWN = 19,
 		FenceNESW = 20,
 		FenceMid = 21,
+		Rock1 = 30,
+		Rock2 = 31,
+		Rock3 = 33,
 
-		Count = 22,
+		Count = 256,
 	};
 };
