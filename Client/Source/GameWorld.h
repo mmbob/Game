@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <array>
 
 #include "WorldGenerator.h"
 #include "TileDefs.h"
@@ -23,11 +24,11 @@ struct TileFlags
 struct Tile
 {
 	int Tileset;
-	RECT TextureClip;
+	Rect TextureClip;
 	int Flags;
 
-	Rect CollisionRect;							// BlockRectangle
-	std::vector<POINT> CollisionPoints;			// BlockPolygon
+	Rect BlockRect;							// BlockRectangle
+	std::vector<POINT> BlockPoints;			// BlockPolygon
 };
 
 class GameWorld;
@@ -65,6 +66,8 @@ class GameWorld
 	mutable WorldChunk chunks[WorldSize][WorldSize];
 public:
 	void Init(std::unique_ptr<WorldGenerator> generator);
+
+	const Tile& GetTile(int layer, int x, int y) const;
 
 	const WorldChunk& GetChunk(int x, int y) const;
 	void SetChunk(int x, int y, const WorldChunk& chunk);
