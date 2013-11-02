@@ -1,19 +1,31 @@
 #include "Engine.h"
 
-void Engine::Init()
+#include "GameWorld.h"
+
+void Engine::Init(GameWorld* world)
 {
+	this->world = world;
+
 	physics = std::unique_ptr<b2World>(new b2World(b2Vec2_zero));
 
 	b2BodyDef bodyDef;
 	bodyDef.fixedRotation = true;
 	bodyDef.position.SetZero();
 	
-	worldBody = std::unique_ptr<b2Body>(physics->CreateBody(&bodyDef));
+	worldBody = physics->CreateBody(&bodyDef);
+
+	WorldChunk& chunk = world->GetChunk(20, 20);
+
+	for (int x = 0; x < WorldChunk::ChunkSize; ++x)
+	for (int y = 0; y < WorldChunk::ChunkSize; ++y)
+	{
+
+	}
 }
 
 void Engine::UnInit()
 {
-	worldBody.release();
+	physics->DestroyBody(worldBody);
 
 	physics.release();
 }
@@ -68,5 +80,17 @@ bool Engine::AddEntity(Entity* pEntity, EntityType::Value type)
 	b2Body* body = physics->CreateBody(&bodyDef);
 	body->CreateFixture(&fixtureDef);
 
+	pEntity->SetBody(body);
+
 	return true;
+}
+
+b2World* Engine::GetPhysics() const
+{
+	return physics.get();
+}
+
+b2Body* Engine::GetWorldBody() const
+{
+	return worldBody;
 }

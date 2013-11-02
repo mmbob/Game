@@ -10,7 +10,7 @@ class Player : public RenderedEntity
 	float maxSpeed;
 	D3DXVECTOR2 acceleration;
 public:
-	Player(Renderer* pRenderer);
+	Player(Renderer* pRenderer, Engine* pEngine);
 	~Player();
 
 	void Update(DirectXManager* pDirectX);

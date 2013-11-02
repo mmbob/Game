@@ -2,12 +2,29 @@
 
 #include <algorithm>
 
-Player::Player(Renderer* pRenderer)
-	: RenderedEntity(pRenderer), sanity(0), maxSpeed(8.0f), acceleration(0.0f, 0.0f)
+#include "Engine.h"
+
+Player::Player(Renderer* pRenderer, Engine* pEngine)
+	: RenderedEntity(pRenderer, pEngine), sanity(0), maxSpeed(8.0f), acceleration(0.0f, 0.0f)
 {
 	RECT clip = { 0, 0, -1, -1 };
-	pRenderObject->SetTextureName(L"Player");
-	pRenderObject->SetTextureClip(clip);
+	renderObject->SetTextureName(L"Player");
+	renderObject->SetTextureClip(clip);
+
+	b2BodyDef bodyDef;
+	bodyDef.fixedRotation = true;
+	bodyDef.type = b2_kinematicBody;
+
+	b2PolygonShape box;
+	box.SetAsBox(0.5f, 0.5f);
+
+	b2FixtureDef fixtureDef;
+	fixtureDef.shape = &box;
+	fixtureDef.density = 1.0f;
+	fixtureDef.friction = 0.0f;
+
+	b2Body* body = parent->GetPhysics()->CreateBody(&bodyDef);
+	body->CreateFixture(&fixtureDef);
 }
 
 Player::~Player()
@@ -23,16 +40,18 @@ void Player::Update(DirectXManager* pDirectX)
 	bool right = pDirectX->IsKeyPressed(DIK_D);
 	bool down = pDirectX->IsKeyPressed(DIK_S);
 
-	acceleration = D3DXVECTOR2(0.0f, 0.0f);
+	b2Vec2 force = b2Vec2_zero;
 
 	if (left && !right)
-		acceleration.x = -accelValue;
+		force.x = -accelValue;
 	else if (right && !left)
-		acceleration.x = accelValue;
+		force.x = accelValue;
 	if (up && !down)
-		acceleration.y = -accelValue;
+		force.y = -accelValue;
 	else if (down && !up)
-		acceleration.y = accelValue;
+		force.y = accelValue;
+
+	body->ApplyForceToCenter(force);
 
 	velocity *= 0.9f;
 

@@ -16,14 +16,17 @@ struct EntityType
 
 class Engine
 {
-	GameWorld world;
+	GameWorld* world;
 	std::unique_ptr<b2World> physics;
-	std::unique_ptr<b2Body> worldBody;
+	b2Body* worldBody;
 public:
-	void Init();
+	void Init(GameWorld* world);
 	void UnInit();
 
 	void Update();
 
 	bool AddEntity(Entity* pEntity, EntityType::Value type);
+
+	b2World* GetPhysics() const;
+	b2Body* GetWorldBody() const;
 };

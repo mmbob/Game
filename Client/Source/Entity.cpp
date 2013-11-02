@@ -3,8 +3,8 @@
 IEntity::~IEntity()
 { }
 
-Entity::Entity()
-	: position(0.0f, 0.0f, 0.0f), velocity(0.0f, 0.0f)
+Entity::Entity(Engine* pEngine)
+: position(0.0f, 0.0f, 0.0f), velocity(0.0f, 0.0f), parent(pEngine)
 {
 	D3DXMatrixIdentity(&rotation);
 }
@@ -33,6 +33,12 @@ bool Entity::GetFlags(int* pFlags) const
 	return true;
 }
 
+bool Entity::GetBody(b2Body** pBody) const
+{
+	*pBody = body;
+	return true;
+}
+
 bool Entity::SetPosition(const D3DXVECTOR3& position)
 {
 	this->position = position;
@@ -57,10 +63,16 @@ bool Entity::SetFlags(int flags)
 	return true;
 }
 
-RenderedEntity::RenderedEntity(Renderer* pRenderer)
+bool Entity::SetBody(b2Body* body)
 {
-	pRenderObject = new RenderObject(pRenderer);
-	pRenderer->AddRenderObject(pRenderObject);
+	this->body = body;
+	return true;
+}
+
+RenderedEntity::RenderedEntity(Renderer* pRenderer, Engine* pEngine)
+: renderObject(new RenderObject(pRenderer)), Entity(pEngine)
+{
+	pRenderer->AddRenderObject(renderObject.get());
 }
 
 RenderedEntity::~RenderedEntity()
@@ -71,13 +83,13 @@ RenderedEntity::~RenderedEntity()
 bool RenderedEntity::SetPosition(const D3DXVECTOR3& position)
 {
 	Entity::SetPosition(position);
-	pRenderObject->SetPosition(position);
+	renderObject->SetPosition(position);
 	return true;
 }
 
 bool RenderedEntity::SetRotation(const D3DXMATRIX& rotation)
 {
 	Entity::SetRotation(rotation);
-	pRenderObject->SetRotation(rotation);
+	renderObject->SetRotation(rotation);
 	return true;
 }
