@@ -150,19 +150,19 @@ bool DirectXManager::IsMousePressed(MouseButton button) const
 	switch (button)
 	{
 	case MB_Left:
-		return mouseState.rgbButtons[0] & 0x80;
+		return (mouseState.rgbButtons[0] & 0x80) > 0;
 		break;
 
 	case MB_Right:
-		return mouseState.rgbButtons[1] & 0x80;
+		return (mouseState.rgbButtons[1] & 0x80) > 0;
 		break;
 
 	case MB_Middle:
-		return mouseState.rgbButtons[2] & 0x80;
+		return (mouseState.rgbButtons[2] & 0x80) > 0;
 		break;
 
 	case MB_4:
-		return mouseState.rgbButtons[3] & 0x80;
+		return (mouseState.rgbButtons[3] & 0x80 ) > 0;
 		break;
 
 	default:

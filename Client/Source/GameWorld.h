@@ -3,16 +3,20 @@
 #include <Windows.h>
 #include <string>
 #include <memory>
+#include <vector>
 
 #include "WorldGenerator.h"
 #include "TileDefs.h"
+#include "Util.h"
 
 struct TileFlags
 {
 	enum Value
 	{
-		BlocksSight,
-		Passable,
+		BlockSight,
+		BlockMovement,
+		BlockRectangle,
+		BlockPolygon,
 	};
 };
 
@@ -20,34 +24,47 @@ struct Tile
 {
 	int Tileset;
 	RECT TextureClip;
-	TileFlags::Value Flags;
+	int Flags;
+
+	Rect CollisionRect;							// BlockRectangle
+	std::vector<POINT> CollisionPoints;			// BlockPolygon
 };
 
-struct WorldChunk
+class GameWorld;
+
+class WorldChunk
 {
+public:
+	static const int MaxLayerCount = 4;
 	static const int ChunkSize = 16;
-
-	bool Initialized;
-	const Tile* Tiles[ChunkSize][ChunkSize];
-
+private:
+	bool initialized;
+	const Tile* tiles[MaxLayerCount][ChunkSize][ChunkSize];
+	int layerCount;
+public:
 	WorldChunk();
 
-	const Tile& GetTile(int x, int y) const;
-	void SetTile(int x, int y, const Tile& tile);
+	void SetInitialized();
+	bool IsInitialized() const;
+
+	const Tile& GetTile(int layer, int x, int y) const;
+	void SetTile(int layer, int x, int y, const Tile& tile);
+
+	int GetLayerCount() const;
 };
 
 class WorldGenerator;
 
 class GameWorld
 {
-	static const int WorldSize = 40;		// The world is a WorldSize x WorldSize square
+	static const int WorldSize = 40;		// The world is a WorldSize x WorldSize square of chunks
 
 	std::unique_ptr<WorldGenerator> generator;
 
 	Tile tileList[TileName::Count];
 	mutable WorldChunk chunks[WorldSize][WorldSize];
 public:
-	void Init(WorldGenerator* pGenerator);
+	void Init(std::unique_ptr<WorldGenerator> generator);
 
 	const WorldChunk& GetChunk(int x, int y) const;
 	void SetChunk(int x, int y, const WorldChunk& chunk);

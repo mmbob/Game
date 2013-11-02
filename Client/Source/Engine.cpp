@@ -10,7 +10,7 @@ void Engine::UnInit()
 
 }
 
-void Engine::Update()
+void Engine::Update(float timeElapsed)
 {
 	for (Entity* pEntity : dynamicEntities)
 	{
@@ -20,8 +20,8 @@ void Engine::Update()
 		D3DXVECTOR2 velocity;
 		pEntity->GetVelocity(&velocity);
 
-		position.x += velocity.x;
-		position.y += velocity.y;
+		position.x += velocity.x * timeElapsed;
+		position.y += velocity.y * timeElapsed;
 
 		pEntity->SetPosition(position);
 	}

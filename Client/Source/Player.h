@@ -13,7 +13,7 @@ public:
 	Player(Renderer* pRenderer);
 	~Player();
 
-	void Update(DirectXManager* pDirectX);
+	void Update(DirectXManager* pDirectX, float timeElapsed);
 
 	int GetSanity() const;
 };

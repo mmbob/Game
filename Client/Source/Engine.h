@@ -26,7 +26,7 @@ public:
 	void Init();
 	void UnInit();
 
-	void Update();
+	void Update(float timeElapsed);
 
 	bool AddEntity(Entity* pEntity, EntityType::Value type);
 };

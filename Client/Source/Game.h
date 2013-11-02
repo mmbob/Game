@@ -19,6 +19,7 @@ class GameClient
 	DirectXManager directX;
 	Renderer renderer;
 	Player player;
+	GameWorld world;
 
 	std::unordered_map<std::wstring, LPD3DXFONT> fonts;
 	std::unordered_map<std::wstring, IRenderObject*> uiElements;

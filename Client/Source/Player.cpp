@@ -7,7 +7,7 @@ Player::Player(Renderer* pRenderer)
 {
 	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
 
-	RECT clip = { 0, 0, -1, -1 };
+	RECT clip = { 0, 0, 50, 50 };
 	textureObject->SetTextureName(L"Player");
 	textureObject->SetTextureClip(clip);
 }
@@ -17,7 +17,7 @@ Player::~Player()
 
 }
 
-void Player::Update(DirectXManager* pDirectX)
+void Player::Update(DirectXManager* pDirectX, float timeElapsed)
 {
 	const float accelValue = 1.0f;
 	bool left = pDirectX->IsKeyPressed(DIK_A);

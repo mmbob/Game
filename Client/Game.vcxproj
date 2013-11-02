@@ -107,6 +107,9 @@
     <ClInclude Include="Source\TileDefs.h" />
     <ClInclude Include="Source\WorldGenerator.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Data\Tiles.json" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

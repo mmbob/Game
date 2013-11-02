@@ -172,6 +172,9 @@ void GameClient::Init(HINSTANCE instance)
 
 	InitFonts();
 
+	world.Init(std::unique_ptr<WorldGenerator>(new WorldGenerator));
+	renderer.SetGameWorld(&world);
+
 	D3DVIEWPORT9 viewport;
 	directX.GetDevice()->GetViewport(&viewport);
 
@@ -246,7 +249,9 @@ void GameClient::Init(HINSTANCE instance)
 	renderer.AddUIObject(uiBackgroundTexture);
 	renderer.AddUIObject(sanityTexture);
 
-	player.SetPosition(D3DXVECTOR3(20.0f, 20.0f, 0.5f));
+	D3DXVECTOR3 playerPosition = D3DXVECTOR3(20.0f * WorldChunk::ChunkSize, 20.0f * WorldChunk::ChunkSize, 0.5f);
+
+	player.SetPosition(playerPosition);
 
 	engine.Init();
 	engine.AddEntity(&player, EntityType::Dynamic);
@@ -255,7 +260,7 @@ void GameClient::Init(HINSTANCE instance)
 	for (int i = 0; i < 3; ++i)
 	{
 		crystals[i] = new SanityCrystal(&renderer);
-		crystals[i]->SetPosition(D3DXVECTOR3(float(rand() % 750), float(rand() % 450), 1.0f));
+		crystals[i]->SetPosition(D3DXVECTOR3(playerPosition.x + 5 * (float(rand()) / RAND_MAX - 0.5f), playerPosition.y + 5 * (float(rand()) / RAND_MAX - 0.5f), 1.0f));
 
 		engine.AddEntity(crystals[i], EntityType::Static);
 	}
@@ -268,13 +273,13 @@ void GameClient::Input(float timeElapsed)
 
 void GameClient::Update(float timeElapsed)
 {
-	player.Update(&directX);
-	engine.Update();
+	player.Update(&directX, timeElapsed);
+	engine.Update(timeElapsed);
 
 	D3DXVECTOR3 playerPosition;
 	player.GetPosition(&playerPosition);
 
-	D3DXVECTOR2 cameraPosition(playerPosition.x + 25, playerPosition.y + 25);
+	D3DXVECTOR2 cameraPosition(playerPosition.x + 25.0f / 64.0f, playerPosition.y + 25.0f / 64.0f);
 	renderer.SetCameraPosition(cameraPosition);
 
 	int minutesSince6am = int(GetGameTime() * 60);
@@ -340,7 +345,7 @@ int GameClient::MainLoop()
 		LARGE_INTEGER currentFrame;
 		QueryPerformanceCounter(&currentFrame);
 
-		float timeElapsed = double(currentFrame.QuadPart - lastFrame.QuadPart) / double(frequency.QuadPart);
+		float timeElapsed = float(currentFrame.QuadPart - lastFrame.QuadPart) / float(frequency.QuadPart);
 
 		if (int(timeElapsed * 1000) < TimePerFrame)
 			Sleep(TimePerFrame - int(timeElapsed * 1000));
@@ -349,7 +354,7 @@ int GameClient::MainLoop()
 		lastFrame = currentFrame;
 		QueryPerformanceCounter(&currentFrame);
 
-		timeElapsed = double(currentFrame.QuadPart - oldLastFrame.QuadPart) / double(frequency.QuadPart);
+		timeElapsed = float(currentFrame.QuadPart - oldLastFrame.QuadPart) / float(frequency.QuadPart);
 		gameTime += timeElapsed;
 
 		Input(timeElapsed);

@@ -49,52 +49,55 @@ LPDIRECT3DTEXTURE9 Renderer::GetTexture(wstring textureName) const
 	return iter->second;
 }
 
-void Renderer::RenderUI() const
-{
-	LPD3DXSPRITE pSprite = pDirectX->GetSprite();
-}
-
-void Renderer::RenderTiles() const
+void Renderer::RenderTiles(const D3DXMATRIX& positionTransform) const
 {
 	auto pSprite = pDirectX->GetSprite();
 
-	LPDIRECT3DTEXTURE9 tileSets[] = 
+	LPDIRECT3DTEXTURE9 tileSets[] =
 	{
 		GetTexture(L"Tiles1"),
 	};
 
-	GameWorld* pWorld = new GameWorld;
-	WorldGenerator* pGenerator = new WorldGenerator;
-	pWorld->Init(pGenerator);
-	array<WorldChunk, 4> chunksToRender =
+	D3DXVECTOR2 screenUpperLeft(float(gameArea.left), float(gameArea.top));
+	D3DXVECTOR3 worldUpperLeft;
+	ScreenToWorld(screenUpperLeft, &worldUpperLeft);
+
+	int divisor = WorldChunk::ChunkSize;
+
+	POINT chunkPositions[4] =
 	{
-		pWorld->GetChunk(int(cameraPosition.x / WorldChunk::ChunkSize), int(cameraPosition.y / WorldChunk::ChunkSize)),
-		pWorld->GetChunk(int(cameraPosition.x / WorldChunk::ChunkSize + 1), int(cameraPosition.y / WorldChunk::ChunkSize)),
-		pWorld->GetChunk(int(cameraPosition.x / WorldChunk::ChunkSize), int(cameraPosition.y / WorldChunk::ChunkSize + 1)),
-		pWorld->GetChunk(int(cameraPosition.x / WorldChunk::ChunkSize + 1), int(cameraPosition.y / WorldChunk::ChunkSize + 1)),
+		{ int(worldUpperLeft.x / divisor), int(worldUpperLeft.y / divisor) },
+		{ int(worldUpperLeft.x / divisor + 1), int(worldUpperLeft.y / divisor) },
+		{ int(worldUpperLeft.x / divisor), int(worldUpperLeft.y / divisor + 1) },
+		{ int(worldUpperLeft.x / divisor + 1), int(worldUpperLeft.y / divisor + 1) },
 	};
 
-	D3DXVECTOR2 cameraOffset = cameraPosition - D3DXVECTOR2(int(cameraPosition.x), int(cameraPosition.y));
-	cameraOffset *= (64 * WorldChunk::ChunkSize);
-
-	for (const WorldChunk chunk : chunksToRender)
+	for (size_t i = 0; i < 4; ++i)
 	{
-		for (int x = 0; x < chunk.ChunkSize; ++x)
-		{
-			for (int y = 0; y < chunk.ChunkSize; ++y)
-			{
-				auto tile = chunk.GetTile(x, y);
+		const WorldChunk& chunk = gameWorld->GetChunk(chunkPositions[i].x, chunkPositions[i].y);
 
-				pSprite->Draw(tileSets[tile.Tileset], &tile.TextureClip, nullptr, &D3DXVECTOR3(x * 64, y * 64, 1.0f), ambientColor);
+		int chunkX = chunkPositions[i].x * WorldChunk::ChunkSize;
+		int chunkY = chunkPositions[i].y * WorldChunk::ChunkSize;
+		for (int layer = 0; layer < chunk.GetLayerCount(); ++layer)
+		{
+			for (int x = 0; x < chunk.ChunkSize; ++x)
+			{
+				for (int y = 0; y < chunk.ChunkSize; ++y)
+				{
+					auto tile = chunk.GetTile(layer, x, y);
+
+					D3DXVECTOR3 rawPosition(float(chunkX + x), float(chunkY + y), 1.0f);
+					D3DXVECTOR4 position;
+					D3DXVec3Transform(&position, &rawPosition, &positionTransform);
+
+					pSprite->Draw(tileSets[tile.Tileset], &tile.TextureClip, nullptr, &D3DXVECTOR3(position.x, position.y, rawPosition.z), ambientColor);
+				}
 			}
 		}
 	}
-
-	delete pWorld;
-//	delete pGenerator;
 }
 
-void Renderer::RenderObjectList(const list<IRenderObject*>& list) const
+void Renderer::RenderObjectList(const list<IRenderObject*>& list, const D3DXMATRIX& positionTransform) const
 {
 	auto pSprite = pDirectX->GetSprite();
 
@@ -134,13 +137,16 @@ void Renderer::RenderObjectList(const list<IRenderObject*>& list) const
 										  D3DXMATRIX rotation;
 										  texObject->GetRotation(&rotation);
 
-										  D3DXVECTOR3 position;
-										  texObject->GetPosition(&position);
+										  D3DXVECTOR3 rawPosition;
+										  texObject->GetPosition(&rawPosition);
 
-										  //			pSprite->SetTransform(&rotation);
-										  pSprite->Draw(GetTexture(name), &clip, nullptr, &position, ambientColor);
+										  D3DXVECTOR4 position;
+										  D3DXVec3Transform(&position, &rawPosition, &positionTransform);
 
-										 break;
+										  pSprite->SetTransform(&rotation);
+										  pSprite->Draw(GetTexture(name), &clip, nullptr, &D3DXVECTOR3(position.x, position.y, rawPosition.z), ambientColor);
+
+										  break;
 		}
 
 		case RenderObjectType::Text:
@@ -165,7 +171,7 @@ void Renderer::RenderObjectList(const list<IRenderObject*>& list) const
 									   D3DXMATRIX rotation;
 									   textObject->GetRotation(&rotation);
 
-									   //			pSprite->SetTransform(&rotation);
+									   pSprite->SetTransform(&rotation);
 									   pFont->DrawText(pSprite, text.c_str(), -1, &rect, format, MixColors(color, ambientColor, 0.5f));
 
 									   break;
@@ -191,28 +197,13 @@ void Renderer::RenderWorld() const
 	D3DXMATRIX oldTransform;
 	pSprite->GetTransform(&oldTransform);
 
-	D3DVIEWPORT9 viewport;
-	pDirectX->GetDevice()->GetViewport(&viewport);
+	RenderTiles(worldToScreenTransform);
+	RenderObjectList(objects, worldToScreenTransform);
 
-	D3DXMATRIX transform;
-	D3DXMatrixIdentity(&transform);
-	D3DXMatrixTranslation(&transform, gameArea.left + (gameArea.right - gameArea.left) / 2 - cameraPosition.x, gameArea.top + (gameArea.bottom - gameArea.top) / 2 - cameraPosition.y, 0.0f);
+	D3DXMATRIX identity;
+	D3DXMatrixIdentity(&identity);
 
-	pSprite->SetTransform(&transform);
-
-	D3DXMATRIX view;
-	D3DXMATRIX world;
-	pDirectX->GetDevice()->GetTransform(D3DTS_VIEW, &view);
-	pDirectX->GetDevice()->GetTransform(D3DTS_WORLD, &world);
-	pSprite->SetWorldViewLH(&world, &view);
-
-	RenderTiles();
-
-	RenderObjectList(objects);
-
-	pSprite->SetTransform(&oldTransform);
-
-	RenderObjectList(uiObjects);
+	RenderObjectList(uiObjects, identity);
 
 	pSprite->End();
 }
@@ -226,8 +217,6 @@ void Renderer::Render() const
 	if (SUCCEEDED(result = pDevice->BeginScene()))
 	{
 		RenderWorld();
-
-		RenderUI();
 
 		assert(SUCCEEDED(pDevice->EndScene()));
 		pDevice->Present(nullptr, nullptr, nullptr, nullptr);
@@ -255,7 +244,12 @@ const D3DXVECTOR2& Renderer::GetCameraPosition() const
 
 void Renderer::SetCameraPosition(const D3DXVECTOR2& position)
 {
-	cameraPosition = position;
+	cameraPosition = position * float(PixelsPerTile);
+	cameraPosition.x = float(int(cameraPosition.x));
+	cameraPosition.y = float(int(cameraPosition.y));
+	cameraPosition /= float(PixelsPerTile);
+
+	UpdateTranforms();
 }
 
 const RECT& Renderer::GetGameArea() const
@@ -266,12 +260,24 @@ const RECT& Renderer::GetGameArea() const
 void Renderer::SetGameArea(const RECT& gameArea)
 {
 	this->gameArea = gameArea;
+
+	UpdateTranforms();
+}
+
+const GameWorld* Renderer::GetGameWorld() const
+{
+	return gameWorld;
+}
+
+void Renderer::SetGameWorld(GameWorld* gameWorld)
+{
+	this->gameWorld = gameWorld;
 }
 
 bool Renderer::WorldToScreen(const D3DXVECTOR3& world, D3DXVECTOR2* pScreen) const
 {
-	D3DXVECTOR2 screen(world.x, world.y);
-	screen *= WorldChunk::ChunkSize;
+	D3DXVECTOR4 screen;
+	D3DXVec3Transform(&screen, &world, &worldToScreenTransform);
 
 	pScreen->x = float(int(screen.x));
 	pScreen->y = float(int(screen.y));
@@ -281,10 +287,12 @@ bool Renderer::WorldToScreen(const D3DXVECTOR3& world, D3DXVECTOR2* pScreen) con
 
 bool Renderer::ScreenToWorld(const D3DXVECTOR2& screen, D3DXVECTOR3* pWorld) const
 {
-	D3DXVECTOR3 world(screen.x, screen.y, 0.0f);
-	world /= WorldChunk::ChunkSize;
+	D3DXVECTOR4 world;
+	D3DXVec2Transform(&world, &screen, &screenToWorldTransform);
 
-	*pWorld = world;
+	pWorld->x = world.x;
+	pWorld->y = world.y;
+	pWorld->z = 0.0f;
 
 	return true;
 }
@@ -292,4 +300,17 @@ bool Renderer::ScreenToWorld(const D3DXVECTOR2& screen, D3DXVECTOR3* pWorld) con
 void Renderer::SetAmbientColor(D3DCOLOR ambientColor)
 {
 	this->ambientColor = ambientColor;
+}
+
+void Renderer::UpdateTranforms()
+{
+	D3DXMATRIX translate1;
+	D3DXMATRIX scale;
+	D3DXMATRIX translate2;
+	D3DXMatrixTranslation(&translate1, -cameraPosition.x, -cameraPosition.y, 0.0f);
+	D3DXMatrixScaling(&scale, float(PixelsPerTile), float(PixelsPerTile), 1.0f);
+	D3DXMatrixTranslation(&translate2, float(gameArea.left + (gameArea.right - gameArea.left) / 2), float(gameArea.top + (gameArea.bottom - gameArea.top) / 2), 0.0f);
+
+	worldToScreenTransform = translate1 * scale * translate2;
+	D3DXMatrixInverse(&screenToWorldTransform, nullptr, &worldToScreenTransform);
 }

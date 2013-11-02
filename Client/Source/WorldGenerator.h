@@ -3,7 +3,7 @@
 #include "GameWorld.h"
 
 class GameWorld;
-struct WorldChunk;
+class WorldChunk;
 
 class WorldGenerator
 {

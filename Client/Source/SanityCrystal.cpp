@@ -10,7 +10,6 @@ SanityCrystal::SanityCrystal(Renderer* pRenderer)
 	velocity = D3DXVECTOR2(0.0f, 0.0f);
 
 	textureObject->SetPosition(position);
-	RECT clip = { 0, 0, -1, -1 };
-	textureObject->SetTextureName(L"Sanity");
-	textureObject->SetTextureClip(clip);
+	textureObject->SetTextureName(L"UI1");
+	textureObject->SetTextureClip(Rect(0, 101, 32, 143));
 }

@@ -6,11 +6,14 @@
 
 #include "DirectX.h"
 #include "RenderObject.h"
+#include "GameWorld.h"
 
 using namespace std;
 
 class Renderer
 {
+	static const int PixelsPerTile = 64;
+
 	DirectXManager* pDirectX;
 
 	list<IRenderObject*> objects;
@@ -22,12 +25,18 @@ class Renderer
 	Rect gameArea;
 	D3DCOLOR ambientColor;
 
+	D3DXMATRIX worldToScreenTransform;
+	D3DXMATRIX screenToWorldTransform;
+
+	GameWorld* gameWorld;
+
+	void UpdateTranforms();
+
 	void LoadTextures();
 
-	void RenderObjectList(const list<IRenderObject*>& list) const;
-	void RenderUI() const;
+	void RenderObjectList(const list<IRenderObject*>& list, const D3DXMATRIX& positionTransform) const;
 	void RenderWorld() const;
-	void RenderTiles() const;
+	void RenderTiles(const D3DXMATRIX& positionTransform) const;
 public:
 	void Init(DirectXManager* pDirectX, HWND window);
 	void UnInit();
@@ -42,6 +51,9 @@ public:
 
 	const RECT& GetGameArea() const;
 	void SetGameArea(const RECT& gameArea);
+
+	const GameWorld* GetGameWorld() const;
+	void SetGameWorld(GameWorld* gameWorld);
 
 	void SetAmbientColor(D3DCOLOR ambientColor);
 
