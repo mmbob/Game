@@ -54,7 +54,7 @@
 					"texture_clip": "64, 64, 128, 128",
 					"block_movement": true,
 					"block_type": "rectangle",
-					"block_rectangle": "0,0,64,64",
+					"block_rectangle": "0,0,64,64"
 				}
 			]
 		}

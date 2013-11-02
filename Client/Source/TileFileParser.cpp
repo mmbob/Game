@@ -7,6 +7,33 @@
 #include "GameWorld.h"
 #include "Util.h"
 
+template <>
+bool TileFileParser::GetValueOrDefault<bool>(const JSONNode& node, const std::string& childName, bool defaultValue)
+{
+	auto iter = node.find_nocase(childName);
+	if (iter == node.end())
+		return defaultValue;
+	return iter->as_bool();
+}
+
+template <>
+int TileFileParser::GetValueOrDefault<int>(const JSONNode& node, const std::string& childName, int defaultValue)
+{
+	auto iter = node.find_nocase(childName);
+	if (iter == node.end())
+		return defaultValue;
+	return iter->as_int();
+}
+
+template <>
+std::string TileFileParser::GetValueOrDefault<std::string>(const JSONNode& node, const std::string& childName, std::string defaultValue)
+{
+	auto iter = node.find_nocase(childName);
+	if (iter == node.end())
+		return defaultValue;
+	return iter->as_string();
+}
+
 TileFileParser::TileFileParser(GameWorld* gameWorld)
 : gameWorld(gameWorld)
 { }
@@ -15,9 +42,9 @@ int TileFileParser::LoadFile(const std::wstring& fileName)
 {
 	std::ifstream tileFile(std::string(fileName.begin(), fileName.end()));
 	if (!tileFile.is_open())
-		return;
+		return 0;
 	tileFile.seekg(0, std::ios::end);
-	size_t fileSize = tileFile.tellg();
+	int fileSize = (int) tileFile.tellg();
 	fileSize++;
 	tileFile.seekg(0, std::ios::beg);
 
@@ -30,6 +57,8 @@ int TileFileParser::LoadFile(const std::wstring& fileName)
 
 	int tilesetCount = root["count"].as_int();
 
+	int tilesLoaded = 0;
+
 	for (auto tileset : root["tilesets"].as_array())
 	{
 		int tilesetID = tileset["id"].as_int();
@@ -37,6 +66,7 @@ int TileFileParser::LoadFile(const std::wstring& fileName)
 
 		for (auto tile : tileset["tiles"].as_array())
 		{
+			tilesLoaded++;
 			int tileID = tile["id"].as_int();
 			tileList[tileID].Tileset = tilesetID;
 
@@ -66,6 +96,8 @@ int TileFileParser::LoadFile(const std::wstring& fileName)
 			}
 		}
 	}
+
+	return tilesLoaded;
 }
 
 bool TileFileParser::ParseRect(std::string text, Rect* pRect)
@@ -80,13 +112,4 @@ bool TileFileParser::ParseRect(std::string text, Rect* pRect)
 	rect.bottom = atoi(text.c_str());
 
 	return true;
-}
-
-template <typename T>
-T TileFileParser::GetValueOrDefault(const JSONNode& node, const std::string& childName, T defaultValue)
-{
-	auto iter = node.find_nocase(childName);
-	if (iter == node.end())
-		return defaultValue;
-	return (T) iter;
 }
