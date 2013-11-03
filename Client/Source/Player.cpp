@@ -7,9 +7,11 @@
 Player::Player(Renderer* pRenderer, Engine* pEngine)
 	: RenderedEntity(pRenderer, pEngine), sanity(0), maxSpeed(8.0f), acceleration(0.0f, 0.0f)
 {
-	RECT clip = { 0, 0, -1, -1 };
-	renderObject->SetTextureName(L"Player");
-	renderObject->SetTextureClip(clip);
+	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
+
+	Rect clip(0, 0, 50, 50);
+	textureObject->SetTextureName(L"Player");
+	textureObject->SetTextureClip(clip);
 
 	b2BodyDef bodyDef;
 	bodyDef.fixedRotation = true;
@@ -32,7 +34,7 @@ Player::~Player()
 
 }
 
-void Player::Update(DirectXManager* pDirectX)
+void Player::Update(DirectXManager* pDirectX, float timeElapsed)
 {
 	const float accelValue = 1.0f;
 	bool left = pDirectX->IsKeyPressed(DIK_A);
@@ -57,4 +59,9 @@ void Player::Update(DirectXManager* pDirectX)
 
 	velocity.x = std::min<float>(std::max<float>(velocity.x + acceleration.x, -maxSpeed), maxSpeed);
 	velocity.y = std::min<float>(std::max<float>(velocity.y + acceleration.y, -maxSpeed), maxSpeed);
+}
+
+int Player::GetSanity() const
+{
+	return sanity;
 }

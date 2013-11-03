@@ -1,76 +1,21 @@
 #include "Renderer.h"
 
+#include <array>
 #include <cassert>
 #include <algorithm>
+
+#include "GameWorld.h"
 
 void Renderer::Init(DirectXManager* pDirectX, HWND window)
 {
 	this->pDirectX = pDirectX;
-
-	HDC context = GetDC(window);
-	const int SanityFontHeight = -MulDiv(32, GetDeviceCaps(context, LOGPIXELSY), 72);
-	const int DayTimeFontHeight = -MulDiv(24, GetDeviceCaps(context, LOGPIXELSY), 72);
-	ReleaseDC(window, context);
-
-	D3DXFONT_DESC desc;
-	desc.Height = SanityFontHeight;
-	desc.Width = 0;
-	desc.OutputPrecision = OUT_DEFAULT_PRECIS;
-	desc.CharSet = DEFAULT_CHARSET;
-	desc.Italic = false;
-	desc.Weight = FW_ULTRALIGHT;
-	desc.PitchAndFamily = DEFAULT_PITCH || FF_DONTCARE;
-	desc.Quality = DEFAULT_QUALITY;
-	wcscpy_s(desc.FaceName, L"Tahoma");
-
-	HRESULT result = D3DXCreateFontIndirect(pDirectX->GetDevice(), &desc, &pSanityFont);
-	assert(SUCCEEDED(result));
-
-	desc.Height = DayTimeFontHeight;
-
-	result = D3DXCreateFontIndirect(pDirectX->GetDevice(), &desc, &pDayTimeFont);
-	assert(SUCCEEDED(result));
-
-	pSanityFont->PreloadCharacters('0', '9');
-	pSanityFont->PreloadCharacters('-', '-');
-	pSanityFont->PreloadCharacters('+', '+');
-
-	pDayTimeFont->PreloadCharacters('0', '9');
-	pDayTimeFont->PreloadCharacters('a', 'a');
-	pDayTimeFont->PreloadCharacters('p', 'p');
-	pDayTimeFont->PreloadCharacters('m', 'm');
-	pDayTimeFont->PreloadCharacters(':', ':');
-
-	sanityText = L"0099";
-	sanityUpdateText = L"+05";
-	dayText = L"152";
-	timeText = L"11:55am";
-
-	SetRectEmpty(&sanityRect);
-	SetRectEmpty(&sanityUpdateRect);
-	SetRectEmpty(&dayRect);
-	SetRectEmpty(&timeRect);
-
-	pSanityFont->DrawText(nullptr, L"0000", -1, &sanityRect, DT_CALCRECT | DT_SINGLELINE, 0);
-	pSanityFont->DrawText(nullptr, L"+99", -1, &sanityUpdateRect, DT_CALCRECT | DT_SINGLELINE, 0);
-	pDayTimeFont->DrawText(nullptr, L"999", -1, &dayRect, DT_CALCRECT | DT_SINGLELINE, 0);
-	pDayTimeFont->DrawText(nullptr, L"12:00am", -1, &timeRect, DT_CALCRECT | DT_SINGLELINE, 0);
-
-	D3DVIEWPORT9 viewport;
-	pDirectX->GetDevice()->GetViewport(&viewport);
-
-	SetRect(&sanityRect, 60, viewport.Height - sanityRect.bottom - 10, 60 + sanityRect.right, viewport.Height - 10);
-	SetRect(&sanityUpdateRect, sanityRect.right, sanityRect.top, sanityRect.right + sanityUpdateRect.right, sanityRect.bottom);
-	SetRect(&timeRect, viewport.Width - timeRect.right - 10, viewport.Height - timeRect.bottom - 10, viewport.Width - 10, viewport.Height - 10);
-	SetRect(&dayRect, timeRect.left - dayRect.right - 10, timeRect.top, timeRect.left - 10, timeRect.bottom);
+	ambientColor = 0xFFFFFFFF;
 
 	LoadTextures();
 }
 
 void Renderer::UnInit()
 {
-	pSanityFont->Release();
-	pDayTimeFont->Release();
 }
 
 void Renderer::LoadTextures()
@@ -104,45 +49,58 @@ LPDIRECT3DTEXTURE9 Renderer::GetTexture(wstring textureName) const
 	return iter->second;
 }
 
-void Renderer::RenderUI() const
-{
-	LPD3DXSPRITE pSprite = pDirectX->GetSprite();
-	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
-
-	pSprite->Draw(GetTexture(L"Background"), nullptr, nullptr, &D3DXVECTOR3(0.0f, 500.0f, 0.0f), 0xFFFFFFFF);
-	pSprite->Draw(GetTexture(L"Sanity"), nullptr, nullptr, &D3DXVECTOR3(10.0f, 520.0f, 0.0f), 0xFFFFFFFF);
-
-	static int alpha = 255;
-	alpha -= 2;
-	if (alpha <= 0)
-		alpha = 255;
-
-	RECT transformedRect = sanityUpdateRect;
-
-	pSanityFont->DrawText(pSprite, sanityText.c_str(), -1, const_cast<RECT*>(&sanityRect), DT_SINGLELINE, 0xFFFFFFFF);
-	pSanityFont->DrawText(pSprite, sanityUpdateText.c_str(), -1, &transformedRect, DT_SINGLELINE, D3DCOLOR_ARGB(alpha, 255, 255, 255));
-	pDayTimeFont->DrawText(pSprite, dayText.c_str(), -1, const_cast<RECT*>(&dayRect), DT_SINGLELINE, 0xFFFFFFFF);
-	pDayTimeFont->DrawText(pSprite, timeText.c_str(), -1, const_cast<RECT*>(&timeRect), DT_SINGLELINE, 0xFFFFFFFF);
-
-	pSprite->End();
-}
-
-void Renderer::RenderWorld() const
+void Renderer::RenderTiles(const D3DXMATRIX& positionTransform) const
 {
 	auto pSprite = pDirectX->GetSprite();
 
-	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
-
-	D3DXMATRIX oldTransform;
-	pSprite->GetTransform(&oldTransform);
-
-	for (IRenderObject* object : objects)
+	LPDIRECT3DTEXTURE9 tileSets[] =
 	{
+		GetTexture(L"Tiles1"),
+	};
+
+	D3DXVECTOR2 screenUpperLeft(float(gameArea.left), float(gameArea.top));
+	D3DXVECTOR3 worldUpperLeft;
+	ScreenToWorld(screenUpperLeft, &worldUpperLeft);
+
+	D3DXVECTOR2 screenLowerRight(float(gameArea.right), float(gameArea.bottom));
+	D3DXVECTOR3 worldLowerRight;
+	ScreenToWorld(screenLowerRight, &worldLowerRight);
+
+	for (int layer = 0; layer < 2; ++layer)
+	{
+		for (int x = int(worldUpperLeft.x); x <= int(worldLowerRight.x); ++x)
+		{
+			for (int y = int(worldUpperLeft.y); y <= int(worldLowerRight.y); ++y)
+			{
+				auto tile = gameWorld->GetTile(layer, x, y);
+
+				D3DXVECTOR3 rawPosition(float(x), float(y), 1.0f);
+				D3DXVECTOR4 position;
+				D3DXVec3Transform(&position, &rawPosition, &positionTransform);
+
+				pSprite->Draw(tileSets[tile.Tileset], &tile.TextureClip, nullptr, &D3DXVECTOR3(position.x, position.y, rawPosition.z), ambientColor);
+}
+		}
+	}
+}
+
+void Renderer::RenderObjectList(const list<IRenderObject*>& list, const D3DXMATRIX& positionTransform) const
+{
+	auto pSprite = pDirectX->GetSprite();
+
+	for (IRenderObject* object : list)
+	{
+		switch (object->GetType())
+		{
+		case RenderObjectType::Texture:
+		{
+
+										  auto texObject = reinterpret_cast<TextureRenderObject*>(object);
 		RECT clip;
-		object->GetTextureClip(&clip);
+										  texObject->GetTextureClip(&clip);
 
 		wstring name;
-		object->GetTextureName(&name);
+										  texObject->GetTextureName(&name);
 		if (clip.right == -1 || clip.bottom == -1)
 		{
 			LPDIRECT3DTEXTURE9 pTexture = GetTexture(name);
@@ -160,20 +118,79 @@ void Renderer::RenderWorld() const
 				clip.bottom = 1;
 			}
 
-			object->SetTextureClip(clip);
+											  texObject->SetTextureClip(clip);
 		}
 
 		D3DXMATRIX rotation;
-		object->GetRotation(&rotation);
+										  texObject->GetRotation(&rotation);
 
-		D3DXVECTOR3 position;
-		object->GetPosition(&position);
+										  D3DXVECTOR3 rawPosition;
+										  texObject->GetPosition(&rawPosition);
+
+										  D3DXVECTOR4 position;
+										  D3DXVec3Transform(&position, &rawPosition, &positionTransform);
+
+										  pSprite->SetTransform(&rotation);
+										  pSprite->Draw(GetTexture(name), &clip, nullptr, &D3DXVECTOR3(position.x, position.y, rawPosition.z), ambientColor);
+
+										  break;
+		}
+
+		case RenderObjectType::Text:
+		{
+									   auto textObject = reinterpret_cast<TextRenderObject*>(object);
+
+									   LPD3DXFONT pFont;
+									   textObject->GetFont(&pFont);
+
+									   std::wstring text;
+									   textObject->GetText(&text);
+
+									   D3DCOLOR color;
+									   textObject->GetColor(&color);
+
+									   RECT rect;
+									   textObject->GetRect(&rect);
+
+									   DWORD format;
+									   textObject->GetFormat(&format);
+
+									   D3DXMATRIX rotation;
+									   textObject->GetRotation(&rotation);
 
 		pSprite->SetTransform(&rotation);
-		pSprite->Draw(GetTexture(name), &clip, nullptr, &position, 0xFFFFFFFF);
+									   pFont->DrawText(pSprite, text.c_str(), -1, &rect, format, MixColors(color, ambientColor, 0.5f));
+
+									   break;
+		}
+
+		case RenderObjectType::Custom:
+		{
+										 auto customObject = reinterpret_cast<IRenderObject*>(object);
+										 customObject->Render(pSprite);
+										 break;
+		}
+		}
+
+	}
 	}
 
-	pSprite->SetTransform(&oldTransform);
+void Renderer::RenderWorld() const
+{
+	auto pSprite = pDirectX->GetSprite();
+
+	HRESULT result = pSprite->Begin(D3DXSPRITE_ALPHABLEND | D3DXSPRITE_SORT_DEPTH_FRONTTOBACK);
+
+	D3DXMATRIX oldTransform;
+	pSprite->GetTransform(&oldTransform);
+
+	RenderTiles(worldToScreenTransform);
+	RenderObjectList(objects, worldToScreenTransform);
+
+	D3DXMATRIX identity;
+	D3DXMatrixIdentity(&identity);
+
+	RenderObjectList(uiObjects, identity);
 
 	pSprite->End();
 }
@@ -182,27 +199,105 @@ void Renderer::Render() const
 {
 	LPDIRECT3DDEVICE9 pDevice = pDirectX->GetDevice();
 
-	HRESULT result = pDevice->Clear(0, nullptr, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
+	HRESULT result = pDevice->Clear(0, 0, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
 
 	if (SUCCEEDED(result = pDevice->BeginScene()))
 	{
 		RenderWorld();
 
-		RenderUI();
-
-		result = pDevice->EndScene();
-		assert(SUCCEEDED(result));
-
+		assert(SUCCEEDED(pDevice->EndScene()));
 		pDevice->Present(nullptr, nullptr, nullptr, nullptr);
 	}
 	else
-	{
-		assert(true);
-	}
+		DebugBreak();
 }
 
 bool Renderer::AddRenderObject(IRenderObject* pObject)
 {
-	objects.push_back(pObject);
+	objects.push_front(pObject);
 	return true;
+}
+
+bool Renderer::AddUIObject(IRenderObject* pObject)
+{
+	uiObjects.push_front(pObject);
+	return true;
+}
+
+const D3DXVECTOR2& Renderer::GetCameraPosition() const
+{
+	return cameraPosition;
+}
+
+void Renderer::SetCameraPosition(const D3DXVECTOR2& position)
+{
+	cameraPosition = position * float(PixelsPerTile);
+	cameraPosition.x = float(int(cameraPosition.x));
+	cameraPosition.y = float(int(cameraPosition.y));
+	cameraPosition /= float(PixelsPerTile);
+
+	UpdateTranforms();
+}
+
+const RECT& Renderer::GetGameArea() const
+{
+	return gameArea;
+}
+
+void Renderer::SetGameArea(const RECT& gameArea)
+{
+	this->gameArea = gameArea;
+
+	UpdateTranforms();
+}
+
+const GameWorld* Renderer::GetGameWorld() const
+{
+	return gameWorld;
+	}
+
+void Renderer::SetGameWorld(GameWorld* gameWorld)
+	{
+	this->gameWorld = gameWorld;
+	}
+
+bool Renderer::WorldToScreen(const D3DXVECTOR3& world, D3DXVECTOR2* pScreen) const
+{
+	D3DXVECTOR4 screen;
+	D3DXVec3Transform(&screen, &world, &worldToScreenTransform);
+
+	pScreen->x = float(int(screen.x));
+	pScreen->y = float(int(screen.y));
+
+	return true;
+}
+
+bool Renderer::ScreenToWorld(const D3DXVECTOR2& screen, D3DXVECTOR3* pWorld) const
+{
+	D3DXVECTOR4 world;
+	D3DXVec2Transform(&world, &screen, &screenToWorldTransform);
+
+	pWorld->x = world.x;
+	pWorld->y = world.y;
+	pWorld->z = 0.0f;
+
+	return true;
+}
+
+void Renderer::SetAmbientColor(D3DCOLOR ambientColor)
+{
+	this->ambientColor = ambientColor;
+}
+
+void Renderer::UpdateTranforms()
+{
+	D3DXMATRIX translate1;
+	D3DXMATRIX scale;
+	D3DXMATRIX translate2;
+	D3DXMatrixTranslation(&translate1, -cameraPosition.x, -cameraPosition.y, 0.0f);
+	D3DXMatrixScaling(&scale, float(PixelsPerTile), float(PixelsPerTile), 1.0f);
+	D3DXMatrixTranslation(&translate2, float(gameArea.left + (gameArea.right - gameArea.left) / 2), float(gameArea.top + (gameArea.bottom - gameArea.top) / 2), 0.0f);
+
+	worldToScreenTransform = translate1 * scale * translate2;
+	D3DXMatrixInverse(&screenToWorldTransform, nullptr, &worldToScreenTransform);
 }

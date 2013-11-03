@@ -23,7 +23,7 @@ public:
 	void Init(GameWorld* world);
 	void UnInit();
 
-	void Update();
+	void Update(float timeElapsed);
 
 	bool AddEntity(Entity* pEntity, EntityType::Value type);
 

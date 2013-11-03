@@ -6,40 +6,59 @@
 
 #include "DirectX.h"
 #include "RenderObject.h"
+#include "GameWorld.h"
 
 using namespace std;
 
 class Renderer
 {
+	static const int PixelsPerTile = 64;
+
 	DirectXManager* pDirectX;
 
 	list<IRenderObject*> objects;
+	list<IRenderObject*> uiObjects;
+	bool hasObjectsChanged;
 	unordered_map<wstring, LPDIRECT3DTEXTURE9> textureMap;
 
-	LPD3DXFONT pSanityFont;
-	LPD3DXFONT pDayTimeFont;
+	D3DXVECTOR2 cameraPosition;
+	Rect gameArea;
+	D3DCOLOR ambientColor;
 
-	wstring sanityText;
-	wstring sanityUpdateText;
-	wstring dayText;
-	wstring timeText;
+	D3DXMATRIX worldToScreenTransform;
+	D3DXMATRIX screenToWorldTransform;
 
-	RECT sanityRect;
-	RECT sanityUpdateRect;
-	RECT dayRect;
-	RECT timeRect;
+	GameWorld* gameWorld;
+
+	void UpdateTranforms();
 
 	void LoadTextures();
 
-	void RenderUI() const;
+	void RenderObjectList(const list<IRenderObject*>& list, const D3DXMATRIX& positionTransform) const;
 	void RenderWorld() const;
+	void RenderTiles(const D3DXMATRIX& positionTransform) const;
 public:
 	void Init(DirectXManager* pDirectX, HWND window);
 	void UnInit();
 
 	bool AddRenderObject(IRenderObject* pObject);
+	bool AddUIObject(IRenderObject* pObject);
 
 	LPDIRECT3DTEXTURE9 GetTexture(wstring textureName) const;
+
+	const D3DXVECTOR2& GetCameraPosition() const;
+	void SetCameraPosition(const D3DXVECTOR2& position);
+
+	const RECT& GetGameArea() const;
+	void SetGameArea(const RECT& gameArea);
+
+	const GameWorld* GetGameWorld() const;
+	void SetGameWorld(GameWorld* gameWorld);
+
+	void SetAmbientColor(D3DCOLOR ambientColor);
+
+	bool WorldToScreen(const D3DXVECTOR3& world, D3DXVECTOR2* pScreen) const;
+	bool ScreenToWorld(const D3DXVECTOR2& screen, D3DXVECTOR3* pWorld) const;
 
 	void Update();
 	void Render() const;

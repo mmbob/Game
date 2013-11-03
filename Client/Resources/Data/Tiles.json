@@ -1,0 +1,62 @@
+{
+	"count": 7,
+	"tilesets": [
+		{
+			"id": 0,
+			"name": "Tileset 0",
+			"tiles": [
+				{
+					"id": 255,
+					"name": "Blank",
+					"texture_clip": "0,0,0,0"
+				},
+				{
+					"id": 0,
+					"name": "Ground 1",
+					"texture_clip": "64,0,128,64"
+				},
+				{
+					"id": 1,
+					"name": "Ground 2",
+					"texture_clip": "128,0,192,64"
+				},
+				{
+					"id": 2,
+					"name": "Ground 3",
+					"texture_clip": "192,0,256,64"
+				},
+				{
+					"id": 3,
+					"name": "Ground 4",
+					"texture_clip": "256,0,320,64"
+				},
+				{
+					"id": 4,
+					"name": "Ground 5",
+					"texture_clip": "320,0,384,64"
+				},
+				{
+					"id": 5,
+					"name": "Ground 6",
+					"texture_clip": "384,0,448,64"
+				},
+				{
+					"id": 30,
+					"name": "Rock 1",
+					"texture_clip": "0, 64, 64, 128",
+					"block_movement": true,
+					"block_type": "rectangle",
+					"block_rectangle": "0,0,64,64"
+				},
+				{
+					"id": 31,
+					"name": "Rock 2",
+					"texture_clip": "64, 64, 128, 128",
+					"block_movement": true,
+					"block_type": "rectangle",
+					"block_rectangle": "0,0,64,64"
+				}
+			]
+		}
+	]
+}

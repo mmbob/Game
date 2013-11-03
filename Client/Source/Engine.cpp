@@ -20,7 +20,7 @@ void Engine::Init(GameWorld* world)
 	for (int y = 0; y < WorldChunk::ChunkSize; ++y)
 	{
 
-	}
+}
 }
 
 void Engine::UnInit()
@@ -30,7 +30,7 @@ void Engine::UnInit()
 	physics.release();
 }
 
-void Engine::Update()
+void Engine::Update(float timeElapsed)
 {
 	const float timeStep = 1.0f / 60.0f;		// 60 steps per second
 	const int velocityIterations = 10;
@@ -46,8 +46,8 @@ void Engine::Update()
 		D3DXVECTOR2 velocity;
 		pEntity->GetVelocity(&velocity);
 
-		position.x += velocity.x;
-		position.y += velocity.y;
+		position.x += velocity.x * timeElapsed;
+		position.y += velocity.y * timeElapsed;
 
 		pEntity->SetPosition(position);
 	}*/

@@ -29,11 +29,9 @@ public:
 
 	virtual bool GetPosition(D3DXVECTOR3* pPosition) const = 0;
 	virtual bool GetRotation(D3DXMATRIX* pRotation) const = 0;
-	virtual bool GetFlags(int* pFlags) const = 0;
 
 	virtual bool SetPosition(const D3DXVECTOR3& position) = 0;
 	virtual bool SetRotation(const D3DXMATRIX& rotation) = 0;
-	virtual bool SetFlags(int flags) = 0;
 };
 
 class Entity : public IEntity
