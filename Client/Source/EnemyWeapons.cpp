@@ -46,7 +46,7 @@ bool SpiderMeleeWeapon::Fire(const D3DXVECTOR2& start, float angle)
 
 	if (CanFire())
 	{
-		lastFireTime = g_pGameClient->GetGameTime();
+		lastFireTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 
 		SpiderMeleeBullet* bullet = new SpiderMeleeBullet(this, renderer, engine);
 

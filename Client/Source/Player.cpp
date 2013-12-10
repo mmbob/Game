@@ -16,7 +16,7 @@ Player::Player(Renderer* pRenderer, Engine* pEngine)
 	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
 
 	textureObject->SetTextureName(L"Entities1");
-	textureObject->SetTextureClip(Rect(64, 0, 64 + 50, 50));
+	textureObject->SetTextureClip(Rect(64, 0, 64 + 64, 64));
 
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
@@ -122,6 +122,8 @@ void Player::Update(float timeElapsed)
 
 	HandleCollisions();
 
+	highestSanity = std::max<int>(highestSanity, health);
+
 	bool left = pDirectX->IsKeyPressed(DIK_A);
 	bool up = pDirectX->IsKeyPressed(DIK_W);
 	bool right = pDirectX->IsKeyPressed(DIK_D);
@@ -174,7 +176,7 @@ void Player::Update(float timeElapsed)
 
 	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
 
-	float timeSinceLastDamage = g_pGameClient->GetGameTime() - lastDamageTime;
+	float timeSinceLastDamage = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime() - lastDamageTime;
 
 	int flashValue = 255;
 	if (timeSinceLastDamage < 2.0f)
@@ -225,6 +227,11 @@ void Player::Update(float timeElapsed)
 int Player::GetSanity() const
 {
 	return health;
+}
+
+int Player::GetHighestSanity() const
+{
+	return highestSanity;
 }
 
 void Player::ChangeWeapon(int index)

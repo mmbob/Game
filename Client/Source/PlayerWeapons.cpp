@@ -52,7 +52,7 @@ bool LightningBoltWeapon::Fire(const D3DXVECTOR2& start, float angle)
 
 	if (CanFire())
 	{
-		lastFireTime = g_pGameClient->GetGameTime();
+		lastFireTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 
 		LightningBullet* bullet = new LightningBullet(this, renderer, engine, bulletLifeTime);
 
@@ -130,7 +130,7 @@ bool FlameBoltWeapon::Fire(const D3DXVECTOR2& start, float angle)
 
 	if (CanFire())
 	{
-		lastFireTime = g_pGameClient->GetGameTime();
+		lastFireTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 
 		FlameBoltBullet* bullet = new FlameBoltBullet(this, renderer, engine, bulletLifeTime);
 
@@ -211,7 +211,7 @@ bool ShockwaveWeapon::Fire(const D3DXVECTOR2& start, float angle)
 
 	if (CanFire())
 	{
-		lastFireTime = g_pGameClient->GetGameTime();
+		lastFireTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 
 		ShockwaveBullet::Direction direction = ShockwaveBullet::UpRight;
 		angle = D3DX_PI / 4.0f;

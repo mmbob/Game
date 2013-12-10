@@ -3,6 +3,7 @@
 #include <Box2D/Box2D.h>
 
 #include "Game.h"
+#include "GameState.h"
 #include "Renderer.h"
 #include "Engine.h"
 #include "Player.h"
@@ -13,8 +14,8 @@
 IWorldGenerator::~IWorldGenerator()
 { }
 
-WorldGenerator::WorldGenerator(Renderer* renderer, Engine* engine)
-: renderer(renderer), engine(engine)
+WorldGenerator::WorldGenerator(InGameState* parent, Renderer* renderer, Engine* engine)
+: parent(parent), renderer(renderer), engine(engine)
 { }
 
 WorldGenerator::~WorldGenerator()
@@ -32,7 +33,7 @@ bool WorldGenerator::GenerateChunk(const GameWorld& world, int x, int y, WorldCh
 //	int seed = rand() % 1024;
 
 	D3DXVECTOR3 playerPosition;
-	g_pGameClient->GetPlayer()->GetPosition(&playerPosition);
+	parent->GetPlayer()->GetPosition(&playerPosition);
 
 	Point noSpawnZone(int(playerPosition.x) - x * WorldChunk::ChunkSize, int(playerPosition.y) - y * WorldChunk::ChunkSize);
 

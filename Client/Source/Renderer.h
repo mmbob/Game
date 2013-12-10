@@ -23,6 +23,7 @@ class Renderer
 	list<IRenderObject*> uiObjects;
 	bool hasObjectsChanged;
 	unordered_map<wstring, LPDIRECT3DTEXTURE9> textureMap;
+	std::unordered_map<std::wstring, LPD3DXFONT> fontMap;
 
 	D3DXVECTOR2 cameraPosition;
 	Rect gameArea;
@@ -76,6 +77,10 @@ public:
 	void Render() const;
 
 	DirectXManager* GetDirectX() const;
+
+	void AddFont(const std::wstring& name, LPD3DXFONT font);
+	void RemoveFont(const std::wstring& name);
+	LPD3DXFONT GetFont(const std::wstring& name);
 
 	void SetPhysicsDraw(b2World* physics, PhysicsDebugDraw* debugDraw);
 };

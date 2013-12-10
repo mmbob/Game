@@ -340,3 +340,24 @@ void Renderer::SetPhysicsDraw(b2World* physics, PhysicsDebugDraw* debugDraw)
 	this->physics = physics;
 	this->debugDraw = debugDraw;
 }
+
+void Renderer::AddFont(const std::wstring& name, LPD3DXFONT font)
+{
+	font->AddRef();
+	fontMap[name] = font;
+}
+
+void Renderer::RemoveFont(const std::wstring& name)
+{
+	auto iter = fontMap.find(name);
+	if (iter != fontMap.end())
+	{
+		fontMap.erase(iter);
+		iter->second->Release();
+	}
+}
+
+LPD3DXFONT Renderer::GetFont(const std::wstring& name)
+{
+	return fontMap[name];
+}

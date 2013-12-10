@@ -9,6 +9,7 @@ class Renderer;
 class Engine;
 class GameWorld;
 class WorldChunk;
+class InGameState;
 class b2Body;
 class Entity;
 struct BodyUserData;
@@ -35,12 +36,13 @@ class WorldGenerator : public IWorldGenerator
 
 	std::unordered_map<Point, std::unique_ptr<ChunkBodyInfo>, GameLocationHash> bodyMap;
 
+	InGameState* parent;
 	Engine* engine;
 	Renderer* renderer;
 
 	void CreateTileEntity(int chunkX, int chunkY, const Point& worldPosition, const Tile& tile);
 public:
-	WorldGenerator(Renderer* renderer, Engine* engine);
+	WorldGenerator(InGameState* parent, Renderer* renderer, Engine* engine);
 	virtual ~WorldGenerator();
 
 	virtual bool GenerateChunk(const GameWorld& world, int x, int y, WorldChunk* chunk);

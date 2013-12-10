@@ -17,6 +17,8 @@ class Player : public RenderedEntity
 	int currentWeaponIndex;
 	std::vector<WeaponInfo> weapons;
 
+	int highestSanity;
+
 	void HandleCollisions();
 public:
 	Player(Renderer* pRenderer, Engine* pEngine);
@@ -25,6 +27,7 @@ public:
 	virtual void Update(float timeElapsed);
 
 	int GetSanity() const;
+	int GetHighestSanity() const;
 
 	void ChangeWeapon(int index);
 	int GetCurrentWeaponCost() const;

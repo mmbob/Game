@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Weapon.h"
+#include "SanityWeapon.h"
 
 class SpiderMeleeBullet : public Bullet
 {

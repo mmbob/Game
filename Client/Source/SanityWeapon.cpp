@@ -50,7 +50,7 @@ bool SanityWeapon::Fire(const D3DXVECTOR2& start, float angle)
 
 	if (CanFire())
 	{
-		lastFireTime = g_pGameClient->GetGameTime();
+		lastFireTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 
 		SanityBullet* bullet = new SanityBullet(this, renderer, engine, bulletLifeTime);
 
@@ -87,7 +87,7 @@ bool DoubleSanityWeapon::Fire(const D3DXVECTOR2& start, float angle)
 
 	if (CanFire())
 	{
-		lastFireTime = g_pGameClient->GetGameTime();
+		lastFireTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 
 		angle -= D3DX_PI / 4;
 

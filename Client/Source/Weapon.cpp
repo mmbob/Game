@@ -10,7 +10,7 @@ IBullet::~IBullet()
 { }
 
 Bullet::Bullet(IWeapon* parent, Renderer* pRenderer, Engine* pEngine, IRenderObject* pRenderObject, float lifeTime)
-: IBullet(pRenderer, pEngine, pRenderObject), parent(parent), renderer(pRenderer), engine(pEngine), endOfLifeTime(g_pGameClient->GetGameTime() + lifeTime)
+: IBullet(pRenderer, pEngine, pRenderObject), parent(parent), renderer(pRenderer), engine(pEngine), endOfLifeTime(reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime() + lifeTime)
 { }
 
 void Bullet::Update(float)
@@ -42,7 +42,7 @@ int Bullet::GetDamage() const
 
 bool Bullet::IsLifeOver() const
 {
-	return endOfLifeTime < g_pGameClient->GetGameTime();
+	return endOfLifeTime < reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 }
 
 bool Bullet::IsDestroyedOnHit() const
@@ -136,7 +136,7 @@ float Weapon::GetFireCooldown() const
 
 bool Weapon::CanFire() const
 {
-	return lastFireTime + fireCooldown < g_pGameClient->GetGameTime();
+	return lastFireTime + fireCooldown < reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 }
 
 Entity* Weapon::GetParent() const

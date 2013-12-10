@@ -2,13 +2,10 @@
 
 #include <Windows.h>
 
-#include "Engine.h"
-#include "Renderer.h"
-#include "Player.h"
+#include "GameState.h"
+#include "DirectX.h"
 
-class Enemy;
-
-class GameClient
+class GameClient : public GameState
 {
 	static const wchar_t* WindowClassName;
 	static const wchar_t* WindowTitle;
@@ -19,23 +16,11 @@ class GameClient
 	HINSTANCE instance;
 	HWND mainWindow;
 	DirectXManager directX;
-	Renderer renderer;
-	Engine engine;
-	GameWorld world;
-	Player player;
-
-	std::unordered_map<std::wstring, LPD3DXFONT> fonts;
-	std::unordered_map<std::wstring, IRenderObject*> uiElements;
-
-	float gameTime;
-	bool paused;
+	std::unique_ptr<Renderer> renderer;
 
 	bool InitInstance(HINSTANCE instance);
 	void InitFonts();
 	void CreateMainWindow(int width, int height, bool fullScreen);
-	void Update(float timeElapsed);
-	void Render(float timeElapsed);
-	void Input(float timeElapsed);
 
 	static LRESULT CALLBACK WinProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 public:
@@ -44,10 +29,9 @@ public:
 	void Init(HINSTANCE instance);
 	void UnInit();
 
-	float GetGameTime() const;
-
-	const Player* GetPlayer() const;
-	LPD3DXFONT GetFont(const std::wstring& name);
+	virtual void Update(float timeElapsed);
+	virtual void Render(float timeElapsed);
+	virtual void Input(float timeElapsed);
 
 	int MainLoop();
 };

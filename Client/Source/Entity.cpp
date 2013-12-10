@@ -106,7 +106,7 @@ int Entity::Damage(int amount)
 {
 	health -= amount;
 
-	float currentTime = g_pGameClient->GetGameTime();
+	float currentTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 
 	if (lastDamageTime + 2.0f > currentTime)
 		recentHealthChange -= amount;

@@ -1,9 +1,10 @@
 #include "Enemy.h"
 
 #include "Game.h"
+#include "GameState.h"
 #include "SanityCrystal.h"
-#include "SanityWeapon.h"
 #include "EnemyWeapons.h"
+#include "Player.h"
 
 class LineRenderObject : public RenderObject
 {
@@ -53,7 +54,7 @@ lastSawPlayerTime(0.0f), textureAlpha(255), recentDamageAlpha(0)
 	pathRender->SetDrawPath(movePath);
 
 	damageRender.reset(new TextRenderObject(pRenderer));
-	damageRender->SetFont(g_pGameClient->GetFont(L"UISmall"));
+	damageRender->SetFont(renderer->GetFont(L"UISmall"));
 }
 
 Enemy::~Enemy()
@@ -83,7 +84,7 @@ void Enemy::CreateBody(int width, int height, float density)
 
 	b2FixtureDef fixtureDef;
 	fixtureDef.shape = &box;
-	fixtureDef.density = 1.0f;
+	fixtureDef.density = density;
 	fixtureDef.friction = 0.0f;
 	fixtureDef.restitution = 0.0f;
 
@@ -99,7 +100,7 @@ void Enemy::Update(float timeElapsed)
 	b2Vec2 position = body->GetPosition();
 
 	b2Body* playerBody;
-	g_pGameClient->GetPlayer()->GetBody(&playerBody);
+	reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetPlayer()->GetBody(&playerBody);
 
 	b2Vec2 playerPosition = playerBody->GetPosition();
 	float playerDistance = (playerPosition - position).Length();
@@ -108,7 +109,7 @@ void Enemy::Update(float timeElapsed)
 
 	if (!movePath.empty())
 	{
-		if (lastSuccessfulMove + 5.0f < g_pGameClient->GetGameTime())
+		if (lastSuccessfulMove + 5.0f < reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime())
 			CancelMove();
 		else
 		{
@@ -117,7 +118,7 @@ void Enemy::Update(float timeElapsed)
 			{
 				movePath.pop_front();
 
-				lastSuccessfulMove = g_pGameClient->GetGameTime();
+				lastSuccessfulMove = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 			}
 
 			if (!movePath.empty())
@@ -178,9 +179,15 @@ void Enemy::Update(float timeElapsed)
 
 	currentWeapon->Update(timeElapsed);
 
+	const bool isDayTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->IsDayTime();
+
+	const float playerSeeDistance = isDayTime ? 5.0f : 4.2f;
+	const float enemySeeDistance = isDayTime ? 4.2f : 5.0f;
+	const float maxSeeDistance = 5.0f;
+
 	bool seesPlayer = false;
 
-	if (playerDistance < 5.0f)
+	if (playerDistance < maxSeeDistance)
 	{
 		PlayerSightRayCast playerSight(parent, this);
 		parent->GetPhysics()->RayCast(&playerSight, position, playerPosition);
@@ -194,34 +201,38 @@ void Enemy::Update(float timeElapsed)
 
 	if (seesPlayer)
 	{
-		if (textureAlpha == 0)
-			renderer->AddRenderObject(textureObject);
-
-		textureAlpha += (timeElapsed * 1000.0f) + 1;
-		textureAlpha = std::min<int>(255, textureAlpha);
-
-		lastSawPlayerTime = g_pGameClient->GetGameTime();
-
-		Point start(int(position.x + 0.5f), int(position.y + 0.5f));
-		Point end(int(playerPosition.x + 0.5f), int(playerPosition.y + 0.5f));
-//		if (movePath.empty())
-//			renderer->AddRenderObject(pathRender);
-
-		if (movePath.empty() || movePath.back() != end)
+		if (playerDistance < playerSeeDistance)
 		{
-			movePath.clear();
-			parent->FindPath(start, end, &movePath);
-			movePath.pop_front();
+			if (textureAlpha == 0)
+				renderer->AddRenderObject(textureObject);
 
-			lastSuccessfulMove = g_pGameClient->GetGameTime();
+			textureAlpha += (timeElapsed * 1000.0f) + 1;
+			textureAlpha = std::min<int>(255, textureAlpha);
 		}
 
-		if (currentWeapon->CanFire())
+		if (playerDistance < enemySeeDistance)
 		{
-			D3DXVECTOR2 bulletStart(position.x, position.y);
-			float bulletAngle = -std::atan2(playerPosition.y - position.y, playerPosition.x - position.x);
+			lastSawPlayerTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 
-			currentWeapon->Fire(bulletStart, bulletAngle);
+			Point start(int(position.x + 0.5f), int(position.y + 0.5f));
+			Point end(int(playerPosition.x + 0.5f), int(playerPosition.y + 0.5f));
+
+			if (movePath.empty() || movePath.back() != end)
+			{
+				movePath.clear();
+				parent->FindPath(start, end, &movePath);
+				movePath.pop_front();
+
+				lastSuccessfulMove = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
+			}
+
+			if (currentWeapon->CanFire())
+			{
+				D3DXVECTOR2 bulletStart(position.x, position.y);
+				float bulletAngle = -std::atan2(playerPosition.y - position.y, playerPosition.x - position.x);
+
+				currentWeapon->Fire(bulletStart, bulletAngle);
+			}
 		}
 	}
 	else if (textureAlpha > 0)
@@ -237,7 +248,7 @@ void Enemy::Update(float timeElapsed)
 
 	int flashValue = 255;
 	if (recentDamageAlpha > 0)
-		flashValue = 128 + 127 * std::sin((g_pGameClient->GetGameTime() - lastDamageTime) * 4 * D3DX_PI);
+		flashValue = 128 + 127 * std::sin((reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime() - lastDamageTime) * 4 * D3DX_PI);
 
 	textureObject->SetColor(D3DCOLOR_ARGB(textureAlpha, 255, flashValue, flashValue));
 
