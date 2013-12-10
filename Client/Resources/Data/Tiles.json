@@ -45,16 +45,41 @@
 					"name": "Rock 1",
 					"texture_clip": "0, 64, 64, 128",
 					"block_movement": true,
-					"block_type": "rectangle",
-					"block_rectangle": "0,0,64,64"
+					"block_type": "polygon",
+					"block_polygon": "8,0;33,0;63,27;63,48;49,63;0,63;0,33"
 				},
 				{
 					"id": 31,
 					"name": "Rock 2",
 					"texture_clip": "64, 64, 128, 128",
 					"block_movement": true,
-					"block_type": "rectangle",
-					"block_rectangle": "0,0,64,64"
+					"block_type": "polygon",
+					"block_polygon": "25,0;63,0;63,63;41,63;0,43"
+				},
+				{
+					"id": 90,
+					"name": "Sanity Crystal",
+					"texture_clip": "0,0,0,0"
+				},
+				{
+					"id": 100,
+					"name": "Enemy 1",
+					"texture_clip": "0,0,0,0"
+				},
+				{
+					"id": 101,
+					"name": "Enemy 2",
+					"texture_clip": "0,0,0,0"
+				},
+				{
+					"id": 102,
+					"name": "Enemy 3",
+					"texture_clip": "0,0,0,0"
+				},
+				{
+					"id": 103,
+					"name": "Enemy 4",
+					"texture_clip": "0,0,0,0"
 				}
 			]
 		}

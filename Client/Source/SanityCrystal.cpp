@@ -1,15 +1,34 @@
 #include "SanityCrystal.h"
 
-SanityCrystal::SanityCrystal(Renderer* pRenderer)
-	: RenderedEntity(pRenderer, std::unique_ptr<IRenderObject>(new TextureRenderObject(pRenderer)))
+#include "Engine.h"
+
+SanityCrystal::SanityCrystal(Renderer* pRenderer, Engine* pEngine)
+	: RenderedEntity(pRenderer, pEngine, new TextureRenderObject(pRenderer))
 {
 	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
 
-	position = D3DXVECTOR3(400, 400, 1.0f);
-	//	D3DXMatrixAffineTransformation2D(&rotation, 1.0f, nullptr, 0.0f, &D3DXVECTOR2(375, 225));
-	velocity = D3DXVECTOR2(0.0f, 0.0f);
+	textureObject->SetTextureName(L"Entities1");
+	textureObject->SetTextureClip(Rect(128, 1, 160, 43));
 
-	textureObject->SetPosition(position);
-	textureObject->SetTextureName(L"UI1");
-	textureObject->SetTextureClip(Rect(0, 101, 32, 143));
+	b2BodyDef bodyDef;
+	bodyDef.fixedRotation = true;
+	bodyDef.type = b2_staticBody;
+	bodyDef.angle = 0.0f;
+
+	b2PolygonShape box;
+	box.SetAsBox(0.25f, 0.32f);
+
+	b2FixtureDef fixtureDef;
+	fixtureDef.shape = &box;
+	fixtureDef.density = 1.0f;
+	fixtureDef.friction = 0.0f;
+	fixtureDef.isSensor = true;
+
+	SetBody(parent->GetPhysics()->CreateBody(&bodyDef));
+	body->CreateFixture(&fixtureDef);
+}
+
+std::wstring SanityCrystal::GetTypeName() const
+{
+	return L"SanityCrystal";
 }

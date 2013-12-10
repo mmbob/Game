@@ -47,6 +47,10 @@ void DirectXManager::InitDeviceObjects(HWND window, int width, int height)
 	if (FAILED(hr))
 		DebugBreak();	// fix
 
+	hr = D3DXCreateLine(pDevice, &pLine);
+	if (FAILED(hr))
+		DebugBreak();	// fix
+
 
 	hr = pMouse->SetCooperativeLevel(window, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 	if (FAILED(hr))
@@ -85,6 +89,7 @@ void DirectXManager::ReleaseDeviceObjects()
 	pKeyboard->Unacquire();
 	pMouse->Unacquire();
 
+	SafeRelease(pLine);
 	SafeRelease(pSprite);
 
 	SafeRelease(pDevice);
@@ -100,6 +105,11 @@ LPD3DXSPRITE DirectXManager::GetSprite() const
 	return pSprite;
 }
 
+LPD3DXLINE DirectXManager::GetLine() const
+{
+	return pLine;
+}
+
 void DirectXManager::Update()
 {
 	HRESULT result;
@@ -108,6 +118,8 @@ void DirectXManager::Update()
 	if (FAILED(result))
 	{
 		while (pKeyboard->Acquire() == DIERR_INPUTLOST);
+
+		ZeroMemory(keyState, sizeof(keyState));
 		return;
 	}
 	result = pKeyboard->GetDeviceState(sizeof(keyState), keyState);
@@ -117,6 +129,8 @@ void DirectXManager::Update()
 	if (FAILED(result))
 	{
 		while (pMouse->Acquire() == DIERR_INPUTLOST);
+
+		ZeroMemory(&mouseState, sizeof(mouseState));
 		return;
 	}
 	result = pMouse->GetDeviceState(sizeof(mouseState), &mouseState);
