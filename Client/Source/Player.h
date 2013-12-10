@@ -3,17 +3,31 @@
 #include "Renderer.h"
 #include "Entity.h"
 #include "DirectX.h"
+#include "PlayerWeapons.h"
 
 class Player : public RenderedEntity
 {
-	int sanity;
-	float maxSpeed;
-	D3DXVECTOR2 acceleration;
+	struct WeaponInfo
+	{
+		int SanityCost;
+		Weapon* Weapon;
+	};
+
+	Weapon* currentWeapon;
+	int currentWeaponIndex;
+	std::vector<WeaponInfo> weapons;
+
+	void HandleCollisions();
 public:
 	Player(Renderer* pRenderer, Engine* pEngine);
 	~Player();
 
-	void Update(DirectXManager* pDirectX, float timeElapsed);
+	virtual void Update(float timeElapsed);
 
 	int GetSanity() const;
+
+	void ChangeWeapon(int index);
+	int GetCurrentWeaponCost() const;
+
+	virtual std::wstring GetTypeName() const;
 };

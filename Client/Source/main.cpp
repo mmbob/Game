@@ -14,6 +14,14 @@ using namespace std;
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 
+#ifdef _DEBUG
+#pragma comment(lib, "box2dd.lib")
+#pragma comment(lib, "libjsond.lib")
+#else
+#pragma comment(lib, "box2d.lib")
+#pragma comment(lib, "libjson.lib")
+#endif
+
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE instance, LPWSTR, int)
 {

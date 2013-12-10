@@ -4,6 +4,9 @@
 
 #include "Engine.h"
 #include "Renderer.h"
+#include "Player.h"
+
+class Enemy;
 
 class GameClient
 {
@@ -15,16 +18,17 @@ class GameClient
 
 	HINSTANCE instance;
 	HWND mainWindow;
-	Engine engine;
 	DirectXManager directX;
 	Renderer renderer;
-	Player player;
+	Engine engine;
 	GameWorld world;
+	Player player;
 
 	std::unordered_map<std::wstring, LPD3DXFONT> fonts;
 	std::unordered_map<std::wstring, IRenderObject*> uiElements;
 
 	float gameTime;
+	bool paused;
 
 	bool InitInstance(HINSTANCE instance);
 	void InitFonts();
@@ -41,6 +45,9 @@ public:
 	void UnInit();
 
 	float GetGameTime() const;
+
+	const Player* GetPlayer() const;
+	LPD3DXFONT GetFont(const std::wstring& name);
 
 	int MainLoop();
 };

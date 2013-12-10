@@ -3,12 +3,15 @@
 #include <cassert>
 
 #include "TileFileParser.h"
+#include "WorldGenerator.h"
 
-#pragma comment(lib, "libjsond.lib")
-
-void GameWorld::Init(std::unique_ptr<WorldGenerator> generator)
+void GameWorld::Init(IWorldGenerator* generator)
 {
-	this->generator = std::unique_ptr<WorldGenerator>(generator.release());
+	this->generator.reset(generator);
+
+	for (int x = 0; x < WorldSize; ++x)
+	for (int y = 0; y < WorldSize; ++y)
+		isChunkLoaded[y][x] = false;
 
 	TileFileParser fileParser(this);
 	fileParser.LoadFile(L"Resources\\Data\\Tiles.json");
@@ -23,7 +26,9 @@ const Tile& GameWorld::GetTile(int layer, int x, int y) const
 
 const WorldChunk& GameWorld::GetChunk(int x, int y) const
 {
-	WorldChunk& chunk = chunks[y % 40][x % 40];
+	x = (x + 40) % 40;
+	y = (y + 40) % 40;
+	WorldChunk& chunk = chunks[y][x];
 	if (chunk.IsInitialized())
 		return chunk;
 
@@ -34,12 +39,48 @@ const WorldChunk& GameWorld::GetChunk(int x, int y) const
 
 void GameWorld::SetChunk(int x, int y, const WorldChunk& chunk)
 {
+	x = (x + 40) % 40;
+	y = (y + 40) % 40;
 	chunks[y][x] = chunk;
+}
+
+bool GameWorld::IsChunkInitialized(int x, int y) const
+{
+	x = (x + 40) % 40;
+	y = (y + 40) % 40;
+	return chunks[y][x].IsInitialized();
 }
 
 const Tile* GameWorld::GetTileList() const
 {
 	return tileList;
+}
+
+void GameWorld::LoadChunk(int x, int y)
+{
+	x = (x + 40) % 40;
+	y = (y + 40) % 40;
+	if (!isChunkLoaded[y][x])
+		generator->LoadChunk(*this, x, y, GetChunk(x, y));
+
+	isChunkLoaded[y][x] = true;
+}
+
+void GameWorld::UnloadChunk(int x, int y)
+{
+	x = (x + 40) % 40;
+	y = (y + 40) % 40;
+	if (isChunkLoaded[y][x])
+		generator->UnloadChunk(*this, x, y, GetChunk(x, y));
+
+	isChunkLoaded[y][x] = false;
+}
+
+bool GameWorld::IsChunkLoaded(int x, int y) const
+{
+	x = (x + 40) % 40;
+	y = (y + 40) % 40;
+	return isChunkLoaded[y][x];
 }
 
 WorldChunk::WorldChunk() : initialized(false), layerCount(0)
@@ -72,4 +113,9 @@ void WorldChunk::SetTile(int layer, int x, int y, const Tile& tile)
 int WorldChunk::GetLayerCount() const
 {
 	return layerCount;
+}
+
+size_t GameLocationHash::operator ()(const Point& value) const
+{
+	return (value.x * WorldChunk::ChunkSize * 40) + value.y;
 }

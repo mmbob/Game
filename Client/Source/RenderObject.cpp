@@ -5,11 +5,11 @@
 IRenderObject::~IRenderObject()
 { }
 
-void IRenderObject::Render(LPD3DXSPRITE pSprite) const
+void IRenderObject::Render(LPD3DXSPRITE) const
 { }
 
-RenderObject::RenderObject(Renderer* pParent)
-	: pParent(pParent), position(0.0f, 0.0f, 0.0f)
+RenderObject::RenderObject(Renderer* parent)
+: parent(parent), position(0.0f, 0.0f, 0.0f), color(D3DCOLOR_XRGB(255, 255, 255))
 {
 	D3DXMatrixIdentity(&rotation);
 }
@@ -26,6 +26,12 @@ bool RenderObject::GetRotation(D3DXMATRIX* pRotation) const
 	return true;
 }
 
+bool RenderObject::GetColor(D3DCOLOR* pColor) const
+{
+	*pColor = color;
+	return true;
+}
+
 bool RenderObject::SetPosition(const D3DXVECTOR3& position)
 {
 	this->position = position;
@@ -38,7 +44,13 @@ bool RenderObject::SetRotation(const D3DXMATRIX& rotation)
 	return true;
 }
 
-void RenderObject::Render(LPD3DXSPRITE pSprite) const
+bool RenderObject::SetColor(D3DCOLOR color)
+{
+	this->color = color;
+	return true;
+}
+
+void RenderObject::Render(LPD3DXSPRITE) const
 { }
 
 TextureRenderObject::TextureRenderObject(Renderer* pParent)
@@ -78,7 +90,7 @@ RenderObjectType::Value TextureRenderObject::GetType() const
 }
 
 TextRenderObject::TextRenderObject(Renderer* pParent)
-: RenderObject(pParent), pFont(nullptr), format(0), color(D3DCOLOR_XRGB(0, 0, 0))
+: RenderObject(pParent), pFont(nullptr), format(0)
 { }
 
 TextRenderObject::~TextRenderObject()
@@ -93,12 +105,6 @@ bool TextRenderObject::GetFont(LPD3DXFONT* ppFont) const
 bool TextRenderObject::GetText(wstring* pText) const
 {
 	*pText = text;
-	return true;
-}
-
-bool TextRenderObject::GetColor(D3DCOLOR* pColor) const
-{
-	*pColor = color;
 	return true;
 }
 
@@ -123,12 +129,6 @@ bool TextRenderObject::SetFont(LPD3DXFONT pFont)
 bool TextRenderObject::SetText(const wstring& text)
 {
 	this->text = text;
-	return true;
-}
-
-bool TextRenderObject::SetColor(D3DCOLOR color)
-{
-	this->color = color;
 	return true;
 }
 

@@ -41,20 +41,21 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(DXSDK_DIR)Include;$(SolutionDir)libjson;$(IncludePath)</IncludePath>
+    <IncludePath>$(DXSDK_DIR)Include;$(SolutionDir)libjson;$(ProjectDir)Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;Libraries;$(LibraryPath)</LibraryPath>
     <SourcePath>$(SolutionDir)libjson\_internal\Source;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(DXSDK_DIR)Include;$(SolutionDir)libjson;$(IncludePath)</IncludePath>
+    <IncludePath>$(DXSDK_DIR)Include;$(SolutionDir)libjson;$(ProjectDir)Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;Libraries;$(LibraryPath)</LibraryPath>
+    <SourcePath>$(SolutionDir)libjson\_internal\Source;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>
@@ -76,6 +77,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>
       </AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -85,6 +87,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Enemy.cpp" />
+    <ClCompile Include="Source\EnemyWeapons.cpp" />
+    <ClCompile Include="Source\GameState.cpp" />
+    <ClCompile Include="Source\PhysicsDebug.cpp" />
+    <ClCompile Include="Source\PlayerWeapons.cpp" />
+    <ClCompile Include="Source\SanityWeapon.cpp" />
     <ClCompile Include="Source\TileFileParser.cpp" />
     <ClCompile Include="Source\Util.cpp" />
     <ClCompile Include="Source\Entity.cpp" />
@@ -97,9 +105,16 @@
     <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\RenderObject.cpp" />
     <ClCompile Include="Source\SanityCrystal.cpp" />
+    <ClCompile Include="Source\Weapon.cpp" />
     <ClCompile Include="Source\WorldGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Enemy.h" />
+    <ClInclude Include="Source\EnemyWeapons.h" />
+    <ClInclude Include="Source\GameState.h" />
+    <ClInclude Include="Source\PhysicsDebug.h" />
+    <ClInclude Include="Source\PlayerWeapons.h" />
+    <ClInclude Include="Source\SanityWeapon.h" />
     <ClInclude Include="Source\TileFileParser.h" />
     <ClInclude Include="Source\Util.h" />
     <ClInclude Include="Source\Engine.h" />
@@ -112,6 +127,7 @@
     <ClInclude Include="Source\RenderObject.h" />
     <ClInclude Include="Source\SanityCrystal.h" />
     <ClInclude Include="Source\TileDefs.h" />
+    <ClInclude Include="Source\Weapon.h" />
     <ClInclude Include="Source\WorldGenerator.h" />
   </ItemGroup>
   <ItemGroup>

@@ -6,9 +6,10 @@
 
 #include "GameWorld.h"
 
-void Renderer::Init(DirectXManager* pDirectX, HWND window)
+void Renderer::Init(DirectXManager* pDirectX, HWND)
 {
 	this->pDirectX = pDirectX;
+	debugDraw = nullptr;
 	ambientColor = 0xFFFFFFFF;
 
 	LoadTextures();
@@ -68,17 +69,18 @@ void Renderer::RenderTiles(const D3DXMATRIX& positionTransform) const
 
 	for (int layer = 0; layer < 2; ++layer)
 	{
-		for (int x = int(worldUpperLeft.x); x <= int(worldLowerRight.x); ++x)
+		for (int x = int(worldUpperLeft.x); x <= int(worldLowerRight.x + 1); ++x)
 		{
-			for (int y = int(worldUpperLeft.y); y <= int(worldLowerRight.y); ++y)
+			for (int y = int(worldUpperLeft.y); y <= int(worldLowerRight.y + 1); ++y)
 			{
 				auto tile = gameWorld->GetTile(layer, x, y);
 
-				D3DXVECTOR3 rawPosition(float(x), float(y), 1.0f);
-				D3DXVECTOR4 position;
-				D3DXVec3Transform(&position, &rawPosition, &positionTransform);
+				D3DXVECTOR3 rawPosition(float(x - 0.5f), float(y - 0.5f), 1.0f);
+				D3DXVECTOR4 position4;
+				D3DXVec3Transform(&position4, &rawPosition, &positionTransform);
 
-				pSprite->Draw(tileSets[tile.Tileset], &tile.TextureClip, nullptr, &D3DXVECTOR3(position.x, position.y, rawPosition.z), ambientColor);
+				D3DXVECTOR3 position3(position4.x, position4.y, rawPosition.z);
+				pSprite->Draw(tileSets[tile.Tileset], &tile.TextureClip, nullptr, &position3, ambientColor);
 }
 		}
 	}
@@ -94,81 +96,66 @@ void Renderer::RenderObjectList(const list<IRenderObject*>& list, const D3DXMATR
 		{
 		case RenderObjectType::Texture:
 		{
+			auto texObject = reinterpret_cast<TextureRenderObject*>(object);
 
-										  auto texObject = reinterpret_cast<TextureRenderObject*>(object);
-		RECT clip;
-										  texObject->GetTextureClip(&clip);
+			std::wstring name;
+			texObject->GetTextureName(&name);
 
-		wstring name;
-										  texObject->GetTextureName(&name);
-		if (clip.right == -1 || clip.bottom == -1)
-		{
-			LPDIRECT3DTEXTURE9 pTexture = GetTexture(name);
-			if (pTexture != nullptr)
-			{
-				D3DSURFACE_DESC desc;
-				pTexture->GetLevelDesc(0, &desc);
+			RECT clip;
+			texObject->GetTextureClip(&clip);
 
-				clip.right = desc.Width;
-				clip.bottom = desc.Height;
-			}
-			else
-			{
-				clip.right = 1;
-				clip.bottom = 1;
-			}
+			D3DXMATRIX rotation;
+			texObject->GetRotation(&rotation);
 
-											  texObject->SetTextureClip(clip);
-		}
+			D3DXVECTOR3 rawPosition;
+			texObject->GetPosition(&rawPosition);
 
-		D3DXMATRIX rotation;
-										  texObject->GetRotation(&rotation);
+			D3DXVECTOR4 position4;
+			D3DXVec3Transform(&position4, &rawPosition, &positionTransform);
 
-										  D3DXVECTOR3 rawPosition;
-										  texObject->GetPosition(&rawPosition);
+			D3DCOLOR color;
+			texObject->GetColor(&color);
 
-										  D3DXVECTOR4 position;
-										  D3DXVec3Transform(&position, &rawPosition, &positionTransform);
+			pSprite->SetTransform(&rotation);
+			D3DXVECTOR3 position3(position4.x, position4.y, rawPosition.z);
+			pSprite->Draw(GetTexture(name), &clip, nullptr, &position3, MixColors(color, ambientColor, 0.5f));
 
-										  pSprite->SetTransform(&rotation);
-										  pSprite->Draw(GetTexture(name), &clip, nullptr, &D3DXVECTOR3(position.x, position.y, rawPosition.z), ambientColor);
-
-										  break;
+			break;
 		}
 
 		case RenderObjectType::Text:
 		{
-									   auto textObject = reinterpret_cast<TextRenderObject*>(object);
+			auto textObject = reinterpret_cast<TextRenderObject*>(object);
 
-									   LPD3DXFONT pFont;
-									   textObject->GetFont(&pFont);
+			LPD3DXFONT pFont;
+			textObject->GetFont(&pFont);
 
-									   std::wstring text;
-									   textObject->GetText(&text);
+			std::wstring text;
+			textObject->GetText(&text);
 
-									   D3DCOLOR color;
-									   textObject->GetColor(&color);
+			D3DCOLOR color;
+			textObject->GetColor(&color);
 
-									   RECT rect;
-									   textObject->GetRect(&rect);
+			RECT rect;
+			textObject->GetRect(&rect);
 
-									   DWORD format;
-									   textObject->GetFormat(&format);
+			DWORD format;
+			textObject->GetFormat(&format);
 
-									   D3DXMATRIX rotation;
-									   textObject->GetRotation(&rotation);
+			D3DXMATRIX rotation;
+			textObject->GetRotation(&rotation);
 
-		pSprite->SetTransform(&rotation);
-									   pFont->DrawText(pSprite, text.c_str(), -1, &rect, format, MixColors(color, ambientColor, 0.5f));
+			pSprite->SetTransform(&rotation);
+			pFont->DrawText(pSprite, text.c_str(), -1, &rect, format, MixColors(color, ambientColor, 0.5f));
 
-									   break;
+			break;
 		}
 
 		case RenderObjectType::Custom:
 		{
-										 auto customObject = reinterpret_cast<IRenderObject*>(object);
-										 customObject->Render(pSprite);
-										 break;
+			auto customObject = reinterpret_cast<IRenderObject*>(object);
+			customObject->Render(pSprite);
+			break;
 		}
 		}
 
@@ -177,12 +164,13 @@ void Renderer::RenderObjectList(const list<IRenderObject*>& list, const D3DXMATR
 
 void Renderer::RenderWorld() const
 {
-	auto pSprite = pDirectX->GetSprite();
+	auto sprite = pDirectX->GetSprite();
 
-	HRESULT result = pSprite->Begin(D3DXSPRITE_ALPHABLEND | D3DXSPRITE_SORT_DEPTH_FRONTTOBACK);
+	HRESULT result = sprite->Begin(D3DXSPRITE_ALPHABLEND | D3DXSPRITE_SORT_DEPTH_FRONTTOBACK);
+	assert(SUCCEEDED(result));
 
 	D3DXMATRIX oldTransform;
-	pSprite->GetTransform(&oldTransform);
+	sprite->GetTransform(&oldTransform);
 
 	RenderTiles(worldToScreenTransform);
 	RenderObjectList(objects, worldToScreenTransform);
@@ -192,7 +180,7 @@ void Renderer::RenderWorld() const
 
 	RenderObjectList(uiObjects, identity);
 
-	pSprite->End();
+	sprite->End();
 }
 
 void Renderer::Render() const
@@ -203,9 +191,19 @@ void Renderer::Render() const
 
 	if (SUCCEEDED(result = pDevice->BeginScene()))
 	{
-		RenderWorld();
+		float timeElapsed = MeasureTime([&]() { RenderWorld(); });
 
-		assert(SUCCEEDED(pDevice->EndScene()));
+		static bool drawDebug = false;
+		if (pDirectX->IsKeyPressed(DIK_F1))
+			drawDebug = !drawDebug;
+
+		if (drawDebug && debugDraw != nullptr)
+		{
+			timeElapsed = MeasureTime([&]() { physics->DrawDebugData(); });
+		}
+
+		result = pDevice->EndScene();
+		assert(SUCCEEDED(result));
 		pDevice->Present(nullptr, nullptr, nullptr, nullptr);
 	}
 	else
@@ -221,6 +219,22 @@ bool Renderer::AddRenderObject(IRenderObject* pObject)
 bool Renderer::AddUIObject(IRenderObject* pObject)
 {
 	uiObjects.push_front(pObject);
+	return true;
+}
+
+bool Renderer::RemoveRenderObject(IRenderObject* pObject)
+{
+	auto iter = std::find(objects.begin(), objects.end(), pObject);
+	if (iter != objects.end())
+		objects.erase(iter);
+	return true;
+}
+
+bool Renderer::RemoveUIObject(IRenderObject* pObject)
+{
+	auto iter = std::find(uiObjects.begin(), uiObjects.end(), pObject);
+	if (iter != uiObjects.end())
+		uiObjects.erase(iter);
 	return true;
 }
 
@@ -254,12 +268,12 @@ void Renderer::SetGameArea(const RECT& gameArea)
 const GameWorld* Renderer::GetGameWorld() const
 {
 	return gameWorld;
-	}
+}
 
 void Renderer::SetGameWorld(GameWorld* gameWorld)
-	{
+{
 	this->gameWorld = gameWorld;
-	}
+}
 
 bool Renderer::WorldToScreen(const D3DXVECTOR3& world, D3DXVECTOR2* pScreen) const
 {
@@ -268,6 +282,9 @@ bool Renderer::WorldToScreen(const D3DXVECTOR3& world, D3DXVECTOR2* pScreen) con
 
 	pScreen->x = float(int(screen.x));
 	pScreen->y = float(int(screen.y));
+
+	if (screen.x < gameArea.left || screen.y < gameArea.top || screen.x >= gameArea.right || screen.y >= gameArea.bottom)
+		return false;
 
 	return true;
 }
@@ -284,6 +301,16 @@ bool Renderer::ScreenToWorld(const D3DXVECTOR2& screen, D3DXVECTOR3* pWorld) con
 	return true;
 }
 
+float Renderer::PixelsToGameUnits(int pixels) const
+{
+	return float(pixels) / PixelsPerTile;
+}
+
+int Renderer::GameUnitsToPixels(float units) const
+{
+	return int(units * float(PixelsPerTile));
+}
+
 void Renderer::SetAmbientColor(D3DCOLOR ambientColor)
 {
 	this->ambientColor = ambientColor;
@@ -294,10 +321,22 @@ void Renderer::UpdateTranforms()
 	D3DXMATRIX translate1;
 	D3DXMATRIX scale;
 	D3DXMATRIX translate2;
+	D3DXMATRIX rotate;
 	D3DXMatrixTranslation(&translate1, -cameraPosition.x, -cameraPosition.y, 0.0f);
 	D3DXMatrixScaling(&scale, float(PixelsPerTile), float(PixelsPerTile), 1.0f);
 	D3DXMatrixTranslation(&translate2, float(gameArea.left + (gameArea.right - gameArea.left) / 2), float(gameArea.top + (gameArea.bottom - gameArea.top) / 2), 0.0f);
 
 	worldToScreenTransform = translate1 * scale * translate2;
 	D3DXMatrixInverse(&screenToWorldTransform, nullptr, &worldToScreenTransform);
+}
+
+DirectXManager* Renderer::GetDirectX() const
+{
+	return pDirectX;
+}
+
+void Renderer::SetPhysicsDraw(b2World* physics, PhysicsDebugDraw* debugDraw)
+{
+	this->physics = physics;
+	this->debugDraw = debugDraw;
 }

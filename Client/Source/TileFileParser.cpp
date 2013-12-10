@@ -1,7 +1,9 @@
 #include "TileFileParser.h"
 
 #include <fstream>
-#define NDEBUG
+#ifdef _DEBUG
+#define JSON_DEBUG
+#endif
 #include <libjson.h>
 
 #include "GameWorld.h"
@@ -55,7 +57,7 @@ int TileFileParser::LoadFile(const std::wstring& fileName)
 
 	Tile* tileList = const_cast<Tile*>(gameWorld->GetTileList());
 
-	int tilesetCount = root["count"].as_int();
+//	int tilesetCount = root["count"].as_int();
 
 	int tilesLoaded = 0;
 
@@ -68,6 +70,7 @@ int TileFileParser::LoadFile(const std::wstring& fileName)
 		{
 			tilesLoaded++;
 			int tileID = tile["id"].as_int();
+			tileList[tileID].ID = tileID;
 			tileList[tileID].Tileset = tilesetID;
 
 			std::string tileName = tile["name"].as_string();
@@ -92,6 +95,24 @@ int TileFileParser::LoadFile(const std::wstring& fileName)
 				else if (rawBlockType == "polygon")
 				{
 					tileList[tileID].Flags |= TileFlags::BlockPolygon;
+
+					std::vector<POINT>& blockPoints = tileList[tileID].BlockPoints;
+
+					std::string rawBlockPolygon = tile["block_polygon"].as_string();
+					while (rawBlockPolygon.length() > 0)
+					{
+						POINT point;
+						point.x = atoi(rawBlockPolygon.c_str());
+						rawBlockPolygon = rawBlockPolygon.substr(rawBlockPolygon.find(',') + 1);
+						point.y = atoi(rawBlockPolygon.c_str());
+						blockPoints.push_back(point);
+
+						int nextPointIndex = rawBlockPolygon.find(';') + 1;
+						if (nextPointIndex == 0)
+							rawBlockPolygon = "";
+						else
+							rawBlockPolygon = rawBlockPolygon.substr(nextPointIndex);
+					}
 				}
 			}
 		}

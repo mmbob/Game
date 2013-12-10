@@ -5,5 +5,7 @@
 class SanityCrystal : public RenderedEntity
 {
 public:
-	SanityCrystal(Renderer* pRenderer);
+	SanityCrystal(Renderer* pRenderer, Engine* pEngine);
+
+	virtual std::wstring GetTypeName() const;
 };

@@ -1,8 +1,6 @@
 #pragma once
 
 #include <string>
-#define NDEBUG
-#include <libjson.h>
 
 #include "Util.h"
 

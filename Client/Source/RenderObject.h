@@ -27,9 +27,11 @@ public:
 
 	virtual bool GetPosition(D3DXVECTOR3* pPosition) const = 0;
 	virtual bool GetRotation(D3DXMATRIX* pRotation) const = 0;
+	virtual bool GetColor(D3DCOLOR* pColor) const = 0;
 
 	virtual bool SetPosition(const D3DXVECTOR3& position) = 0;
 	virtual bool SetRotation(const D3DXMATRIX& rotation) = 0;
+	virtual bool SetColor(D3DCOLOR color) = 0;
 
 	virtual void Render(LPD3DXSPRITE pSprite) const = 0;
 
@@ -41,17 +43,20 @@ public:
 class RenderObject : public IRenderObject
 {
 protected:
-	Renderer* pParent;
+	Renderer* parent;
 	D3DXVECTOR3 position;
 	D3DXMATRIX rotation;
+	D3DCOLOR color;
 public:
 	RenderObject(Renderer* pParent);
 
 	virtual bool GetPosition(D3DXVECTOR3* pPosition) const;
 	virtual bool GetRotation(D3DXMATRIX* pRotation) const;
+	virtual bool GetColor(D3DCOLOR* pColor) const;
 
 	virtual bool SetPosition(const D3DXVECTOR3& position);
 	virtual bool SetRotation(const D3DXMATRIX& rotation);
+	virtual bool SetColor(D3DCOLOR color);
 
 	virtual void Render(LPD3DXSPRITE pSprite) const;
 
@@ -83,20 +88,17 @@ protected:
 	wstring text;
 	DWORD format;
 	Rect rect;
-	D3DCOLOR color;
 public:
 	TextRenderObject(Renderer* pParent);
 	virtual ~TextRenderObject();
 
 	bool GetFont(LPD3DXFONT* ppFont) const;
 	bool GetText(wstring* pText) const;
-	bool GetColor(D3DCOLOR* pColor) const;
 	bool GetRect(RECT* pRect) const;
 	bool GetFormat(DWORD* pFormat) const;
 
 	bool SetFont(LPD3DXFONT pFont);
 	bool SetText(const wstring& text);
-	bool SetColor(D3DCOLOR color);
 	bool SetRect(const RECT& rect);
 	bool SetFormat(DWORD format);
 

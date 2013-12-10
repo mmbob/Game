@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Box2D/Box2D.h>
 #include <string>
 #include <unordered_map>
 #include <list>
@@ -9,6 +10,8 @@
 #include "GameWorld.h"
 
 using namespace std;
+
+class PhysicsDebugDraw;
 
 class Renderer
 {
@@ -30,6 +33,9 @@ class Renderer
 
 	GameWorld* gameWorld;
 
+	b2World* physics;
+	PhysicsDebugDraw* debugDraw;
+
 	void UpdateTranforms();
 
 	void LoadTextures();
@@ -43,6 +49,9 @@ public:
 
 	bool AddRenderObject(IRenderObject* pObject);
 	bool AddUIObject(IRenderObject* pObject);
+
+	bool RemoveRenderObject(IRenderObject* pObject);
+	bool RemoveUIObject(IRenderObject* pObject);
 
 	LPDIRECT3DTEXTURE9 GetTexture(wstring textureName) const;
 
@@ -60,6 +69,13 @@ public:
 	bool WorldToScreen(const D3DXVECTOR3& world, D3DXVECTOR2* pScreen) const;
 	bool ScreenToWorld(const D3DXVECTOR2& screen, D3DXVECTOR3* pWorld) const;
 
+	float PixelsToGameUnits(int pixels) const;
+	int GameUnitsToPixels(float units) const;
+
 	void Update();
 	void Render() const;
+
+	DirectXManager* GetDirectX() const;
+
+	void SetPhysicsDraw(b2World* physics, PhysicsDebugDraw* debugDraw);
 };

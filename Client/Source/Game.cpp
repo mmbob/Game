@@ -3,15 +3,18 @@
 #include <windowsx.h>
 #include <cassert>
 
+#include "PhysicsDebug.h"
 #include "SanityCrystal.h"
+#include "Enemy.h"
 #include "Util.h"
+#include "WorldGenerator.h"
 
 const wchar_t* GameClient::WindowClassName = L"fa3a766d-cc01-4644-98fe-fa9008e7a20d";
 const wchar_t* GameClient::WindowTitle = L"Nightmares";
 
 GameClient* g_pGameClient = nullptr;
 
-GameClient::GameClient() : renderer(), player(&renderer), gameTime(0.0f)
+GameClient::GameClient() : renderer(), player(&renderer, &engine), gameTime(0.0f), paused(false)
 {
 	srand(GetTickCount());
 }
@@ -114,7 +117,7 @@ void GameClient::UnInit()
 	}
 }
 
-void GameClient::CreateMainWindow(int width, int height, bool fullScreen)
+void GameClient::CreateMainWindow(int width, int height, bool)
 {
 	DWORD exStyles = WS_EX_OVERLAPPEDWINDOW;
 	DWORD styles = WS_VISIBLE | WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME;
@@ -172,7 +175,7 @@ void GameClient::Init(HINSTANCE instance)
 
 	InitFonts();
 
-	world.Init(std::unique_ptr<WorldGenerator>(new WorldGenerator));
+	world.Init(new WorldGenerator(&renderer, &engine));
 	renderer.SetGameWorld(&world);
 
 	D3DVIEWPORT9 viewport;
@@ -184,6 +187,7 @@ void GameClient::Init(HINSTANCE instance)
 	Rect timeRect;
 	Rect dayLabelRect;
 	Rect timeLabelRect;
+	Rect spellCostRect;
 
 	fonts[L"UILarge"]->DrawText(nullptr, L"0099", -1, &sanityRect, DT_CALCRECT | DT_SINGLELINE, 0);
 	fonts[L"UILarge"]->DrawText(nullptr, L"+99", -1, &sanityUpdateRect, DT_CALCRECT | DT_SINGLELINE, 0);
@@ -191,6 +195,7 @@ void GameClient::Init(HINSTANCE instance)
 	fonts[L"UIMedium"]->DrawText(nullptr, L"999", -1, &dayRect, DT_CALCRECT | DT_SINGLELINE, 0);
 	fonts[L"UISmall"]->DrawText(nullptr, L"Time", -1, &timeLabelRect, DT_CALCRECT | DT_SINGLELINE, 0);
 	fonts[L"UISmall"]->DrawText(nullptr, L"Day", -1, &dayLabelRect, DT_CALCRECT | DT_SINGLELINE, 0);
+	fonts[L"UISmall"]->DrawText(nullptr, L"8", -1, &spellCostRect, DT_CALCRECT | DT_SINGLELINE, 0);
 
 	sanityRect = Rect(60, viewport.Height - sanityRect.bottom - 10, 60 + sanityRect.right, viewport.Height - 10);
 	sanityUpdateRect = Rect(sanityRect.right, sanityRect.top, sanityRect.right + sanityUpdateRect.right, sanityRect.bottom);
@@ -198,6 +203,7 @@ void GameClient::Init(HINSTANCE instance)
 	dayRect = Rect(timeRect.left - dayRect.right - 10, timeRect.top, timeRect.left - 10, timeRect.bottom);
 	timeLabelRect = Rect(timeRect.left, timeRect.top - timeLabelRect.bottom, timeRect.right, timeRect.top);
 	dayLabelRect = Rect(dayRect.left, dayRect.top - dayLabelRect.bottom, dayRect.right, dayRect.top);
+	spellCostRect = Rect(viewport.Width / 2 + 30 - spellCostRect.right, viewport.Height - 20 - spellCostRect.bottom, viewport.Width / 2 + 32, viewport.Height - 20);
 
 	struct UITextElement
 	{
@@ -213,7 +219,7 @@ void GameClient::Init(HINSTANCE instance)
 		DWORD textFormat;
 	};
 
-	UITextElement elements[6] =
+	UITextElement elements[] =
 	{
 		UITextElement(L"SanityCount", L"UILarge", L"", sanityRect, 0xFFFFFFFF, DT_SINGLELINE),
 		UITextElement(L"SanityCountUpdate", L"UIMedium", L"", sanityUpdateRect, 0xFFFFFFFF, DT_SINGLELINE),
@@ -221,18 +227,19 @@ void GameClient::Init(HINSTANCE instance)
 		UITextElement(L"Time", L"UIMedium", L"", timeRect, 0xFFFFFFFF, DT_SINGLELINE | DT_CENTER),
 		UITextElement(L"DayLabel", L"UISmall", L"Day", dayLabelRect, 0xFFFFFFFF, DT_SINGLELINE | DT_CENTER),
 		UITextElement(L"TimeLabel", L"UISmall", L"Time", timeLabelRect, 0xFFFFFFFF, DT_SINGLELINE | DT_CENTER),
+		UITextElement(L"SpellCost", L"UISmall", L"1", spellCostRect, 0xFFFFFFFF, DT_SINGLELINE),
 	};
 
-	for (int i = 0; i < 6; ++i)
+	for (UITextElement& element : elements)
 	{
 		auto renderObject = new TextRenderObject(&renderer);
-		renderObject->SetFont(fonts[elements[i].fontName]);
-		renderObject->SetColor(elements[i].textColor);
-		renderObject->SetText(elements[i].text);
-		renderObject->SetRect(elements[i].textRect);
-		renderObject->SetFormat(elements[i].textFormat);
+		renderObject->SetFont(fonts[element.fontName]);
+		renderObject->SetColor(element.textColor);
+		renderObject->SetText(element.text);
+		renderObject->SetRect(element.textRect);
+		renderObject->SetFormat(element.textFormat);
 
-		uiElements[elements[i].name] = renderObject;
+		uiElements[element.name] = renderObject;
 		renderer.AddUIObject(renderObject);
 	}
 
@@ -246,48 +253,118 @@ void GameClient::Init(HINSTANCE instance)
 	sanityTexture->SetTextureName(L"UI1");
 	sanityTexture->SetTextureClip(Rect(0, 101, 32, 143));
 
+	auto spellBorderTexture = new TextureRenderObject(&renderer);
+	spellBorderTexture->SetPosition(D3DXVECTOR3(float(ResolutionX - 96) / 2.0f, float(ResolutionY) - 98.0f, 0.2f));
+	spellBorderTexture->SetTextureName(L"UI1");
+	spellBorderTexture->SetTextureClip(Rect(832, 0, 832 + 96, 96));
+
+	auto darknessTexture = new TextureRenderObject(&renderer);
+	darknessTexture->SetPosition(D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	darknessTexture->SetTextureName(L"UI1");
+	darknessTexture->SetTextureClip(Rect(0, 1023 - 500, 800, 1024));
+
 	renderer.AddUIObject(uiBackgroundTexture);
 	renderer.AddUIObject(sanityTexture);
+	renderer.AddUIObject(spellBorderTexture);
+	renderer.AddUIObject(darknessTexture);
+
+	for (int i = 0; i < 10; ++i)
+	{
+		auto spellTexture = new TextureRenderObject(&renderer);
+		spellTexture->SetPosition(D3DXVECTOR3(float(ResolutionX - 64) / 2.0f, float(ResolutionY) - 82.0f, 0.2f));
+		spellTexture->SetTextureName(L"UI1");
+		spellTexture->SetTextureClip(Rect(i * 64, 192, i * 64 + 64, 256));
+
+		std::wstring spellTextureName = L"Spell";
+		spellTextureName += '0' + (i + 1) % 10;
+
+		uiElements[spellTextureName] = spellTexture;
+	}
+
+	renderer.AddUIObject(uiElements[L"Spell1"]);
 
 	D3DXVECTOR3 playerPosition = D3DXVECTOR3(20.0f * WorldChunk::ChunkSize, 20.0f * WorldChunk::ChunkSize, 0.5f);
 
-	player.SetPosition(playerPosition);
-
-	engine.Init();
+	engine.Init(&world);
 	engine.AddEntity(&player, EntityType::Dynamic);
 
-	SanityCrystal** crystals = new SanityCrystal*[3];
-	for (int i = 0; i < 3; ++i)
-	{
-		crystals[i] = new SanityCrystal(&renderer);
-		crystals[i]->SetPosition(D3DXVECTOR3(playerPosition.x + 5 * (float(rand()) / RAND_MAX - 0.5f), playerPosition.y + 5 * (float(rand()) / RAND_MAX - 0.5f), 1.0f));
+	player.SetPosition(playerPosition);
 
-		engine.AddEntity(crystals[i], EntityType::Static);
-	}
+	engine.SetPlayer(&player);
+
+	std::deque<Point> path;
+	engine.FindPath(Point(int(playerPosition.x), int(playerPosition.y)), Point(int(playerPosition.x) + 5, int(playerPosition.y) + 5), &path);
+
+	auto debugDraw = new PhysicsDebugDraw(&renderer);
+	engine.GetPhysics()->SetDebugDraw(debugDraw);
+	renderer.SetPhysicsDraw(engine.GetPhysics(), debugDraw);
 }
 
-void GameClient::Input(float timeElapsed)
+void GameClient::Input(float)
 {
 	directX.Update();
+
+	static int escapeCheck = 0;
+	if (escapeCheck > 0)
+		escapeCheck--;
+	if (escapeCheck == 0 && directX.IsKeyPressed(DIK_ESCAPE))
+	{
+		paused = !paused;
+		escapeCheck = 30;
+	}
+
+	int playerWeapon = -1;
+	if (directX.IsKeyPressed(DIK_1))
+		playerWeapon = 0;
+	else if (directX.IsKeyPressed(DIK_2))
+		playerWeapon = 1;
+	else if (directX.IsKeyPressed(DIK_3))
+		playerWeapon = 2;
+	else if (directX.IsKeyPressed(DIK_4))
+		playerWeapon = 3;
+	else if (directX.IsKeyPressed(DIK_5))
+		playerWeapon = 4;
+
+	if (playerWeapon != -1)
+	{
+		player.ChangeWeapon(playerWeapon);
+
+		std::wstring spellTextureName = L"Spell";
+		spellTextureName += '0' + (playerWeapon + 1) % 10;
+		
+		for (int i = 0; i < 10; ++i)
+		{
+			std::wstring spellTextureName = L"Spell";
+			spellTextureName += '0' + (i + 1) % 10;
+
+			renderer.RemoveUIObject(uiElements[spellTextureName]);
+		}
+
+		renderer.AddUIObject(uiElements[spellTextureName]);
+
+		std::wstring costText;
+		costText += L'0' + wchar_t(player.GetCurrentWeaponCost());
+
+		reinterpret_cast<TextRenderObject*>(uiElements[L"SpellCost"])->SetText(costText);
+	}
 }
 
 void GameClient::Update(float timeElapsed)
 {
-	player.Update(&directX, timeElapsed);
 	engine.Update(timeElapsed);
 
 	D3DXVECTOR3 playerPosition;
 	player.GetPosition(&playerPosition);
 
-	D3DXVECTOR2 cameraPosition(playerPosition.x + 25.0f / 64.0f, playerPosition.y + 25.0f / 64.0f);
+	D3DXVECTOR2 cameraPosition(playerPosition.x, playerPosition.y);
 	renderer.SetCameraPosition(cameraPosition);
 
-	int minutesSince6am = int(GetGameTime() * 60);
+	int minutesSince730am = int(GetGameTime());
 
-	int hoursPassed = int(float(minutesSince6am) / 60.0f);
-	int day = (hoursPassed + 6) / 24 + 1;
-	int hour = (hoursPassed + 6) % 24;
-	int minute = minutesSince6am % 60;
+	int hoursPassed = int(float(minutesSince730am + 30) / 60.0f);
+	int day = (hoursPassed + 7) / 24 + 1;
+	int hour = (hoursPassed + 7) % 24;
+	int minute = (minutesSince730am + 30) % 60;
 
 	std::wstring suffix = (hour >= 12 ? L"pm" : L"am");
 
@@ -315,7 +392,7 @@ void GameClient::Update(float timeElapsed)
 	reinterpret_cast<TextRenderObject*>(uiElements[L"SanityCount"])->SetText(to_wstring(player.GetSanity()));
 }
 
-void GameClient::Render(float timeElapsed)
+void GameClient::Render(float)
 {
 	renderer.Render();
 }
@@ -323,9 +400,13 @@ void GameClient::Render(float timeElapsed)
 int GameClient::MainLoop()
 {
 	MSG msg;
+	ZeroMemory(&msg, sizeof(msg));
 
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
+
+	float lastSecond = 0.0f;
+	int framesPerSecond = 0;
 
 	bool quit = false;
 	const int TimePerFrame = 1000 / 60;
@@ -355,11 +436,27 @@ int GameClient::MainLoop()
 		QueryPerformanceCounter(&currentFrame);
 
 		timeElapsed = float(currentFrame.QuadPart - oldLastFrame.QuadPart) / float(frequency.QuadPart);
-		gameTime += timeElapsed;
+		if (!paused)
+		{
+			gameTime += 1.0f / 60.0f;
 
-		Input(timeElapsed);
-		Update(timeElapsed);
-		Render(timeElapsed);
+			OutputDebugString(L"Begin frame\n");
+
+			Input(timeElapsed);
+			Update(timeElapsed);
+			Render(timeElapsed);
+
+			OutputDebugString(L"End frame\n");
+		}
+		else
+			Input(timeElapsed);
+
+		framesPerSecond++;
+		if (gameTime > lastSecond + 1.0f)
+		{
+			lastSecond = gameTime;
+			framesPerSecond = 0;
+		}
 	}
 
 	return msg.wParam;
@@ -368,4 +465,14 @@ int GameClient::MainLoop()
 float GameClient::GetGameTime() const
 {
 	return gameTime;
+}
+
+const Player* GameClient::GetPlayer() const
+{
+	return &player;
+}
+
+LPD3DXFONT GameClient::GetFont(const std::wstring& name)
+{
+	return fonts[name];
 }

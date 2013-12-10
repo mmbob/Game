@@ -24,6 +24,7 @@ class DirectXManager
 	LPDIRECT3D9 pDirectX;
 	LPDIRECT3DDEVICE9 pDevice;
 	LPD3DXSPRITE pSprite;
+	LPD3DXLINE pLine;
 
 	// Input
 	LPDIRECTINPUT8 pInput;
@@ -39,6 +40,7 @@ public:
 
 	LPDIRECT3DDEVICE9 GetDevice() const;
 	LPD3DXSPRITE GetSprite() const;
+	LPD3DXLINE GetLine() const;
 
 	void Update();
 

@@ -30,6 +30,12 @@ struct TileName
 		Rock1 = 30,
 		Rock2 = 31,
 		Rock3 = 33,
+		SanityCrystal = 90,
+		Enemy1 = 100,
+		Enemy2 = 101,
+		Enemy3 = 102,
+		Enemy4 = 103,
+		Enemy5 = 104,
 
 		Count = 256,
 	};
