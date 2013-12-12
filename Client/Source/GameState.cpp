@@ -466,7 +466,7 @@ gameOverText(new TextRenderObject(renderer)), descriptionText(new TextRenderObje
 	gameOverRect = Rect((viewport.Width - gameOverRect.right) / 2, (viewport.Height - gameOverRect.bottom) / 2, viewport.Width, viewport.Height);
 
 	gameOverText->SetFont(renderer->GetFont(L"UILarge"));
-	gameOverText->SetText(L"You Win!");
+	gameOverText->SetText(gameOverString);
 	gameOverText->SetRect(gameOverRect);
 	gameOverText->SetColor(D3DCOLOR_ARGB(255, 255, 255, 255));
 

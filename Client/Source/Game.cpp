@@ -200,10 +200,10 @@ int GameClient::MainLoop()
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
 
-	int timePeriod = 10;
+	int timePeriod = 5;
 
 	TIMECAPS timeCaps;
-	if (timeGetDevCaps(&timeCaps, sizeof(timeCaps)) != TIMERR_NOERROR)
+	if (timeGetDevCaps(&timeCaps, sizeof(timeCaps)) == TIMERR_NOERROR)
 	{
 		timePeriod = std::max<int>(timePeriod, timeCaps.wPeriodMin);
 		timeBeginPeriod(timePeriod);
@@ -254,6 +254,8 @@ int GameClient::MainLoop()
 		timeEndPeriod(timePeriod);
 		throw;
 	}
+
+	timeEndPeriod(timePeriod);
 
 	return msg.wParam;
 }

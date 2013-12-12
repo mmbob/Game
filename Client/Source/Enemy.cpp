@@ -119,7 +119,7 @@ void Enemy::Update(float timeElapsed)
 				break;
 			}
 		}
-		else if (userData->Type == BodyUserData::DataType::Tile)
+		else if (userData->Type == BodyUserData::DataType::Tile && (userData->Data.Tile->Flags & TileFlags::BlockSight) > 0)
 		{
 			if (bullet->IsDestroyedOnHit())
 				reinterpret_cast<Weapon*>(bullet->GetWeapon())->RemoveBullet(bullet);
