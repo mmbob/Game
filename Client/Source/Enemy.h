@@ -24,6 +24,7 @@ protected:
 	int sanityDropped;
 
 	std::unique_ptr<Weapon> currentWeapon;
+	std::vector<Entity*> drops;
 
 	std::deque<Point> movePath;
 	float lastSuccessfulMove;

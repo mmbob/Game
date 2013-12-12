@@ -23,9 +23,17 @@ void Engine::Init(GameWorld* world)
 
 void Engine::UnInit()
 {
+	for (Entity* entity : entitiesToRemove)
+	{
+		auto iter = std::find(dynamicEntities.begin(), dynamicEntities.end(), entity);
+		if (iter != dynamicEntities.end())
+			dynamicEntities.erase(iter);
+		delete entity;
+	}
+
 	physics->DestroyBody(worldBody);
 
-	physics.release();
+	physics.reset();
 }
 
 void Engine::Update(float timeElapsed)
@@ -44,7 +52,7 @@ void Engine::Update(float timeElapsed)
 
 	entitiesToRemove.clear();
 
-	const float timeStep = 1.0f / 60.0f;		// 60 steps per second
+	const float timeStep = timeElapsed;// 1.0f / 60.0f;		// 60 steps per second
 	const int velocityIterations = 8;
 	const int positionIterations = 4;
 
@@ -113,7 +121,7 @@ bool Engine::RemoveEntity(Entity* entity)
 {
 	auto iter = std::find(entitiesToRemove.begin(), entitiesToRemove.end(), entity);
 	if (iter == entitiesToRemove.end())
-		entitiesToRemove.push_front(entity);
+		entitiesToRemove.push_back(entity);
 	return true;
 }
 

@@ -34,12 +34,12 @@ void DirectXManager::InitDeviceObjects(HWND window, int width, int height)
 	parameters.hDeviceWindow = window;
 	parameters.BackBufferCount = 1;
 	parameters.BackBufferFormat = D3DFMT_UNKNOWN;
-	parameters.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+	parameters.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 	parameters.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	parameters.EnableAutoDepthStencil = true;
 	parameters.AutoDepthStencilFormat = D3DFMT_D16;
 
-	HRESULT hr = pDirectX->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &parameters, &pDevice);
+	HRESULT hr = pDirectX->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, window, D3DCREATE_HARDWARE_VERTEXPROCESSING, &parameters, &pDevice);
 	if (FAILED(hr))
 		DebugBreak();	// fix
 
@@ -125,6 +125,14 @@ void DirectXManager::Update()
 	result = pKeyboard->GetDeviceState(sizeof(keyState), keyState);
 	assert(SUCCEEDED(result));
 
+	int index = 0;
+	for (unsigned char key : keyState)
+	{
+		if ((key & 0x80) == 0)
+			keyPressedTime[index] = 0;
+		index++;
+	}
+
 	result = pMouse->Poll();
 	if (FAILED(result))
 	{
@@ -137,10 +145,24 @@ void DirectXManager::Update()
 	assert(SUCCEEDED(result));
 }
 
+bool DirectXManager::IsKeyDown(int keyCode) const
+{
+	if ((keyState[keyCode] & 0x80) > 0)
+		return true;
+	return false;
+}
+
 bool DirectXManager::IsKeyPressed(int keyCode) const
 {
-	if (keyState[keyCode] & 0x80)
+	const DWORD KeyDelay = 200;
+	DWORD currentTime = GetTickCount();
+
+	if ((keyState[keyCode] & 0x80) > 0 && (currentTime - keyPressedTime[keyCode]) > KeyDelay)
+	{
+		keyPressedTime[keyCode] = currentTime;
+
 		return true;
+	}
 	return false;
 }
 

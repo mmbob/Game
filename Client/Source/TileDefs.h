@@ -30,6 +30,8 @@ struct TileName
 		Rock1 = 30,
 		Rock2 = 31,
 		Rock3 = 33,
+		Hole1 = 40,
+		TallGrass1 = 50,
 		SanityCrystal = 90,
 		Enemy1 = 100,
 		Enemy2 = 101,

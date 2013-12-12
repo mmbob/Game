@@ -124,42 +124,38 @@ void Player::Update(float timeElapsed)
 
 	highestSanity = std::max<int>(highestSanity, health);
 
-	bool left = pDirectX->IsKeyPressed(DIK_A);
-	bool up = pDirectX->IsKeyPressed(DIK_W);
-	bool right = pDirectX->IsKeyPressed(DIK_D);
-	bool down = pDirectX->IsKeyPressed(DIK_S);
+	bool left = pDirectX->IsKeyDown(DIK_A);
+	bool up = pDirectX->IsKeyDown(DIK_W);
+	bool right = pDirectX->IsKeyDown(DIK_D);
+	bool down = pDirectX->IsKeyDown(DIK_S);
 
 	b2Vec2 force = b2Vec2_zero;
-	const float accelValue = 50.0f;
+	const float accelValue = 30.0f;
 
 	if (left && !right)
-		force.x = -accelValue;
+		force.x = -1.0f;
 	else if (right && !left)
-		force.x = accelValue;
+		force.x = 1.0f;
 	if (up && !down)
-		force.y = -accelValue;
+		force.y = -1.0f;
 	else if (down && !up)
-		force.y = accelValue;
+		force.y = 1.0f;
+
+	force.Normalize();
+	force *= accelValue;
 
 	body->ApplyForceToCenter(force);
-
-	if (pDirectX->IsKeyPressed(DIK_1))
-		ChangeWeapon(0);
-	else if (pDirectX->IsKeyPressed(DIK_2))
-		ChangeWeapon(1);
-	else if (pDirectX->IsKeyPressed(DIK_3))
-		ChangeWeapon(2);
 
 	if (health > weapons[currentWeaponIndex].SanityCost)	// Can only shoot if we have sanity
 	{
 		float bulletAngle = 1.0f;
-		if (pDirectX->IsKeyPressed(DIK_LEFT))
+		if (pDirectX->IsKeyDown(DIK_LEFT))
 			bulletAngle = D3DX_PI;
-		else if (pDirectX->IsKeyPressed(DIK_UP))
+		else if (pDirectX->IsKeyDown(DIK_UP))
 			bulletAngle = D3DX_PI / 2.0f;
-		else if (pDirectX->IsKeyPressed(DIK_RIGHT))
+		else if (pDirectX->IsKeyDown(DIK_RIGHT))
 			bulletAngle = 0.0f;
-		else if (pDirectX->IsKeyPressed(DIK_DOWN))
+		else if (pDirectX->IsKeyDown(DIK_DOWN))
 			bulletAngle = -D3DX_PI / 2.0f;
 
 		if (bulletAngle != 1.0f)	// 5.0f is the "no button pressed" value
@@ -216,7 +212,7 @@ void Player::Update(float timeElapsed)
 				}
 			}
 		}
-		else if (userData->Type == BodyUserData::DataType::Tile)
+		else if (userData->Type == BodyUserData::DataType::Tile && (userData->Data.Tile->Flags & TileFlags::BlockSight) > 0)
 		{
 			if (bullet->IsDestroyedOnHit())
 				reinterpret_cast<Weapon*>(bullet->GetWeapon())->RemoveBullet(bullet);

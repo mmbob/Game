@@ -20,9 +20,9 @@ class IWorldGenerator
 public:
 	virtual ~IWorldGenerator() = 0;
 
-	virtual bool GenerateChunk(const GameWorld& world, int x, int y, WorldChunk* chunk) = 0;
-	virtual bool LoadChunk(const GameWorld& world, int x, int y, const WorldChunk& chunk) = 0;
-	virtual bool UnloadChunk(const GameWorld& world, int x, int y, const WorldChunk& chunk) = 0;
+	virtual bool GenerateChunk(const GameWorld* world, int x, int y, WorldChunk* chunk) = 0;
+	virtual bool LoadChunk(const GameWorld* world, int x, int y) = 0;
+	virtual bool UnloadChunk(const GameWorld* world, int x, int y) = 0;
 };
 
 class WorldGenerator : public IWorldGenerator
@@ -41,11 +41,12 @@ class WorldGenerator : public IWorldGenerator
 	Renderer* renderer;
 
 	void CreateTileEntity(int chunkX, int chunkY, const Point& worldPosition, const Tile& tile);
+	bool UnloadChunkImpl(int x, int y);
 public:
 	WorldGenerator(InGameState* parent, Renderer* renderer, Engine* engine);
 	virtual ~WorldGenerator();
 
-	virtual bool GenerateChunk(const GameWorld& world, int x, int y, WorldChunk* chunk);
-	virtual bool LoadChunk(const GameWorld& world, int x, int y, const WorldChunk& chunk);
-	virtual bool UnloadChunk(const GameWorld& world, int x, int y, const WorldChunk& chunk);
+	virtual bool GenerateChunk(const GameWorld* world, int x, int y, WorldChunk* chunk);
+	virtual bool LoadChunk(const GameWorld* world, int x, int y);
+	virtual bool UnloadChunk(const GameWorld* world, int x, int y);
 };

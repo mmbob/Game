@@ -32,6 +32,7 @@ class DirectXManager
 	LPDIRECTINPUTDEVICE8 pKeyboard;
 	DIMOUSESTATE mouseState;
 	unsigned char keyState[256];
+	mutable DWORD keyPressedTime[256];
 public:
 	void Init();
 	void UnInit();
@@ -44,6 +45,7 @@ public:
 
 	void Update();
 
+	bool IsKeyDown(int keyCode) const;
 	bool IsKeyPressed(int keyCode) const;
 	int GetMouseX() const;
 	int GetMouseY() const;

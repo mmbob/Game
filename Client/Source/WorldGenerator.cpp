@@ -19,16 +19,24 @@ WorldGenerator::WorldGenerator(InGameState* parent, Renderer* renderer, Engine* 
 { }
 
 WorldGenerator::~WorldGenerator()
-{ }
+{
+	std::vector<Point> locations;
+	for (std::pair<const Point, std::unique_ptr<ChunkBodyInfo> >& pair : bodyMap)
+	{
+		locations.push_back(pair.first);
+	}
 
-bool WorldGenerator::GenerateChunk(const GameWorld& world, int x, int y, WorldChunk* pChunk)
+	for (Point location : locations)
+		UnloadChunk(nullptr, location.x, location.y);
+}
+
+bool WorldGenerator::GenerateChunk(const GameWorld* world, int x, int y, WorldChunk* pChunk)
 {
 	WorldChunk& chunk = *pChunk;
 
 	chunk.SetInitialized();
 
 	int baseTiles[] = { TileName::Ground1, TileName::Ground2, TileName::Ground3, TileName::Ground4, TileName::Ground5 };
-	int featureTiles[] = { TileName::Blank, TileName::Blank, TileName::Blank, TileName::Blank, TileName::Blank, TileName::Blank, TileName::Blank, TileName::Blank, TileName::Blank, TileName::Blank, TileName::Rock1, TileName::Rock2 };
 
 //	int seed = rand() % 1024;
 
@@ -44,7 +52,24 @@ bool WorldGenerator::GenerateChunk(const GameWorld& world, int x, int y, WorldCh
 		int featureTile = TileName::Blank;
 		if (std::abs(noSpawnZone.x - tileX) >= 2 || std::abs(noSpawnZone.y - tileY) >= 2)	// Make sure a rock or enemy doesn't spawn too close to player
 		{
-			featureTile = featureTiles[rand() % 12];
+			const int SpawnRate = 8;
+
+			int grassTileCount = 0;
+			if (tileX > 0 && chunk.GetTile(1, tileX - 1, tileY).ID == TileName::TallGrass1)
+				grassTileCount += 25;
+			if (tileY > 0 && chunk.GetTile(1, tileX, tileY - 1).ID == TileName::TallGrass1)
+				grassTileCount += 25;
+
+			int randValue = rand() % 100;
+			if (randValue < SpawnRate)
+				featureTile = TileName::Rock1;
+			else if (randValue < 2 * SpawnRate)
+				featureTile = TileName::Rock2;
+			else if (randValue < 2 * SpawnRate)
+				featureTile = TileName::Hole1;
+			else if (randValue < 2 * SpawnRate + 2 + grassTileCount)
+				featureTile = TileName::TallGrass1;
+
 			if (featureTile == TileName::Blank)
 			{
 				if (rand() % 30 == 0)
@@ -60,17 +85,18 @@ bool WorldGenerator::GenerateChunk(const GameWorld& world, int x, int y, WorldCh
 			}
 		}
 
-		chunk.SetTile(0, tileX, tileY, world.GetTileList()[baseTile]);
-		chunk.SetTile(1, tileX, tileY, world.GetTileList()[featureTile]);
+		chunk.SetTile(0, tileX, tileY, world->GetTileList()[baseTile]);
+		chunk.SetTile(1, tileX, tileY, world->GetTileList()[featureTile]);
 	}
 
 	return true;
 }
 
-bool WorldGenerator::LoadChunk(const GameWorld&, int chunkX, int chunkY, const WorldChunk& chunk)
+bool WorldGenerator::LoadChunk(const GameWorld* world, int chunkX, int chunkY)
 {
 	Point location(chunkX, chunkY);
 	bodyMap[location].reset(new ChunkBodyInfo);
+	const WorldChunk& chunk = world->GetChunk(chunkX, chunkY);
 
 	for (int x = 0; x < WorldChunk::ChunkSize; ++x)
 	for (int y = 0; y < WorldChunk::ChunkSize; ++y)
@@ -116,19 +142,19 @@ bool WorldGenerator::LoadChunk(const GameWorld&, int chunkX, int chunkY, const W
 	return true;
 }
 
-bool WorldGenerator::UnloadChunk(const GameWorld&, int chunkX, int chunkY, const WorldChunk&)
+bool WorldGenerator::UnloadChunk(const GameWorld*, int chunkX, int chunkY)
 {
 	Point location(chunkX, chunkY);
 
 	std::unique_ptr<ChunkBodyInfo>& bodyInfo = bodyMap[location];
-	for (b2Body* body : bodyInfo->Bodies)
-		engine->GetPhysics()->DestroyBody(body);
+	if (engine->GetPhysics() != nullptr)
+		for (b2Body* body : bodyInfo->Bodies)
+			engine->GetPhysics()->DestroyBody(body);
 	for (BodyUserData* userData : bodyInfo->UserDatas)
 		delete userData;
 	for (Entity* entity : bodyInfo->Entities)
 		engine->RemoveEntity(entity);
 
-	bodyMap[location].reset(nullptr);
 	bodyMap.erase(location);
 
 	return true;
@@ -138,14 +164,27 @@ void WorldGenerator::CreateTileEntity(int chunkX, int chunkY, const Point& world
 {
 	Point chunkLocation(chunkX, chunkY);
 
-	if (tile.Flags & TileFlags::BlockMovement)
+	bool blockMovement = (tile.Flags & TileFlags::BlockMovement) > 0;
+	bool blockSight = (tile.Flags & TileFlags::BlockSight) > 0;
+
+	if (blockMovement || blockSight)
 	{
 		b2PolygonShape shape;
 		if (tile.Flags & TileFlags::BlockRectangle)
 		{
-			float tileWidth = renderer->PixelsToGameUnits(tile.BlockRect.right - tile.BlockRect.left - 1);
-			float tileHeight = renderer->PixelsToGameUnits(tile.BlockRect.bottom - tile.BlockRect.top - 1);
-			shape.SetAsBox(tileWidth / 2.0f, tileHeight / 2.0f);
+			b2Vec2 points[4];
+
+			float tileLeft = renderer->PixelsToGameUnits(tile.BlockRect.left) - 0.5f;
+			float tileTop = renderer->PixelsToGameUnits(tile.BlockRect.top) - 0.5f;
+			float tileRight = renderer->PixelsToGameUnits(tile.BlockRect.right) - 0.5f;
+			float tileBottom = renderer->PixelsToGameUnits(tile.BlockRect.bottom) - 0.5f;
+
+			points[0].Set(tileLeft, tileTop);
+			points[1].Set(tileRight, tileTop);
+			points[2].Set(tileRight, tileBottom);
+			points[3].Set(tileLeft, tileBottom);
+
+			shape.Set(points, 4);
 		}
 		else
 		{
@@ -180,6 +219,7 @@ void WorldGenerator::CreateTileEntity(int chunkX, int chunkY, const Point& world
 		tileFixtureDef.density = 0.0f;
 		tileFixtureDef.friction = 0.0f;
 		tileFixtureDef.restitution = 0.0f;
+		tileFixtureDef.isSensor = !blockMovement && blockSight;
 
 		tileBody->CreateFixture(&tileFixtureDef);
 

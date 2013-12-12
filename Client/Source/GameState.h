@@ -8,6 +8,8 @@ class GameWorld;
 class Player;
 class Renderer;
 class IRenderObject;
+class TextRenderObject;
+class TextureRenderObject;
 
 class GameState
 {
@@ -39,10 +41,11 @@ class InGameState : public GameState
 
 	float gameTime;
 	bool isDayTime;
+	int startDay;
 
 	std::unordered_map<std::wstring, IRenderObject*> uiElements;
 public:
-	InGameState(GameState* parent, Renderer* renderer);
+	InGameState(GameState* parent, Renderer* renderer, int startDay);
 	virtual ~InGameState();
 
 	virtual void EnterState(GameState* newState);
@@ -71,10 +74,14 @@ public:
 
 class GameOverState : public GameState
 {
+	int startDay;
 	int highestSanity;
 	int hoursSurvived;
+
+	std::unique_ptr<TextRenderObject> gameOverText;
+	std::unique_ptr<TextRenderObject> descriptionText;
 public:
-	GameOverState(GameState* parent, Renderer* renderer, int highestSanity, int hoursSurvived);
+	GameOverState(GameState* parent, Renderer* renderer, int startDay, int highestSanity, int hoursSurvived);
 	virtual ~GameOverState();
 
 	virtual void Input(float timeElapsed);
@@ -83,10 +90,30 @@ public:
 
 class MainMenuState : public GameState
 {
+	struct MenuItemName
+	{
+		enum Value
+		{
+			None = -1,
+			StartGame = 0,
+			Quit = 1,
+		};
+	};
+
+	std::unordered_map<std::wstring, IRenderObject*> uiElements;
+
+	std::vector<IRenderObject*> menuItems;
+	MenuItemName::Value selectedMenuItem;
+	float selectedItemTween;
+	float selectedItemTweenChange;
+	int startDay;
+
+	void SelectMenuItem(MenuItemName::Value newSelection);
 public:
-	MainMenuState(GameState* parent, Renderer* renderer);
+	MainMenuState(GameState* parent, Renderer* renderer, int startDay);
 	virtual ~MainMenuState();
 
+	virtual void Input(float timeElapsed);
 	virtual void Update(float timeElapsed);
 };
 

@@ -78,6 +78,7 @@ protected:
 	std::vector<std::pair<Bullet*, BodyUserData*> > bulletCollisions;
 public:
 	Weapon(Entity* parent, Renderer* renderer, Engine* engine, float fireCooldown);
+	~Weapon();
 
 	virtual void SetFireCooldown(float fireCooldown);
 	virtual float GetFireCooldown() const;

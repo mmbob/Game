@@ -58,7 +58,12 @@ lastSawPlayerTime(0.0f), textureAlpha(255), recentDamageAlpha(0)
 }
 
 Enemy::~Enemy()
-{ }
+{
+	for (Entity* drop : drops)
+	{
+		parent->RemoveEntity(drop);
+	}
+}
 
 void Enemy::CreateBody(int width, int height, float density)
 {
@@ -94,6 +99,32 @@ void Enemy::CreateBody(int width, int height, float density)
 
 void Enemy::Update(float timeElapsed)
 {
+	currentWeapon->Update(timeElapsed);
+
+	auto bulletCollisions = currentWeapon->GetBulletCollisions();
+
+	for (auto bulletPair : bulletCollisions)
+	{
+		Bullet* bullet = bulletPair.first;
+		BodyUserData* userData = bulletPair.second;
+
+		if (userData->Type == BodyUserData::DataType::Entity)
+		{
+			Entity* entity = userData->Data.Entity;
+
+			if (entity->GetTypeName() == L"Player")
+			{
+				currentWeapon->RemoveBullet(bullet);
+				break;
+			}
+		}
+		else if (userData->Type == BodyUserData::DataType::Tile)
+		{
+			if (bullet->IsDestroyedOnHit())
+				reinterpret_cast<Weapon*>(bullet->GetWeapon())->RemoveBullet(bullet);
+		}
+	}
+
 	if (!body->IsActive())
 		return;
 
@@ -177,8 +208,6 @@ void Enemy::Update(float timeElapsed)
 		}
 	}
 
-	currentWeapon->Update(timeElapsed);
-
 	const bool isDayTime = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->IsDayTime();
 
 	const float playerSeeDistance = isDayTime ? 5.0f : 4.2f;
@@ -220,8 +249,14 @@ void Enemy::Update(float timeElapsed)
 			if (movePath.empty() || movePath.back() != end)
 			{
 				movePath.clear();
-				parent->FindPath(start, end, &movePath);
-				movePath.pop_front();
+
+				std::deque<Point> newMovePath;
+				parent->FindPath(start, end, &newMovePath);
+
+				if (movePath.empty() || newMovePath.front() != movePath.front())
+					newMovePath.pop_front();
+
+				movePath = newMovePath;
 
 				lastSuccessfulMove = reinterpret_cast<InGameState*>(g_pGameClient->GetChild())->GetGameTime();
 			}
@@ -264,30 +299,6 @@ void Enemy::Update(float timeElapsed)
 			renderer->RemoveRenderObject(damageRender.get());
 		}
 	}
-
-	auto bulletCollisions = currentWeapon->GetBulletCollisions();
-
-	for (auto bulletPair : bulletCollisions)
-	{
-		Bullet* bullet = bulletPair.first;
-		BodyUserData* userData = bulletPair.second;
-
-		if (userData->Type == BodyUserData::DataType::Entity)
-		{
-			Entity* entity = userData->Data.Entity;
-
-			if (entity->GetTypeName() == L"Player")
-			{
-				currentWeapon->RemoveBullet(bullet);
-				break;
-			}
-		}
-		else if (userData->Type == BodyUserData::DataType::Tile)
-		{
-			if (bullet->IsDestroyedOnHit())
-				reinterpret_cast<Weapon*>(bullet->GetWeapon())->RemoveBullet(bullet);
-		}
-	}
 }
 
 void Enemy::CancelMove()
@@ -313,6 +324,7 @@ int Enemy::Damage(int amount)
 			crystal->SetPosition(position + D3DXVECTOR3((float(rand()) / RAND_MAX) - 0.5f, (float(rand()) / RAND_MAX) - 0.5f, 0.0f));
 
 			parent->AddEntity(crystal, EntityType::Static);
+			drops.push_back(crystal);
 		}
 	}
 	else
@@ -364,18 +376,27 @@ Enemy::PlayerSightRayCast::PlayerSightRayCast(Engine* engine, Enemy* parent)
 
 float32 Enemy::PlayerSightRayCast::ReportFixture(b2Fixture* fixture, const b2Vec2&, const b2Vec2&, float32)
 {
-	if (fixture->IsSensor())
-		return -1.0f;
-
 	auto userData = reinterpret_cast<BodyUserData*>(fixture->GetBody()->GetUserData());
 
-	if (userData != nullptr && userData->Type == BodyUserData::DataType::Entity)
+	if (userData != nullptr)
 	{
-		Entity* entity = userData->Data.Entity;
-		if (entity == parent)
-			return -1.0f;
-		else if (entity->GetTypeName() == L"Player")
-			return -1.0f;
+		if (userData->Type == BodyUserData::DataType::Entity)
+		{
+			if (fixture->IsSensor())
+				return -1.0f;
+
+			Entity* entity = userData->Data.Entity;
+			if (entity == parent)
+				return -1.0f;
+			else if (entity->GetTypeName() == L"Player")
+				return -1.0f;
+		}
+		else if (userData->Type == BodyUserData::DataType::Tile)
+		{
+			const Tile* tile = userData->Data.Tile;
+			if ((tile->Flags & TileFlags::BlockSight) == 0)
+				return -1.0f;
+		}
 	}
 
 	SeesPlayer = false;
@@ -386,7 +407,7 @@ float32 Enemy::PlayerSightRayCast::ReportFixture(b2Fixture* fixture, const b2Vec
 CloudEnemy::CloudEnemy(Renderer* pRenderer, Engine* pEngine)
 : Enemy(pRenderer, pEngine)
 {
-	maxSpeed = 1.5f;
+	maxSpeed = 1.0f;
 	health = 5;
 	sanityDropped = 8;
 	currentWeapon.reset(new SanityWeapon(this, pRenderer, pEngine, 2.5f));
@@ -407,7 +428,7 @@ std::wstring CloudEnemy::GetTypeName() const
 SpiderEnemy::SpiderEnemy(Renderer* pRenderer, Engine* pEngine)
 : Enemy(pRenderer, pEngine)
 {
-	maxSpeed = 2.0f;
+	maxSpeed = 1.2f;
 	health = 4;
 	sanityDropped = 10;
 	currentWeapon.reset(new SpiderMeleeWeapon(this, pRenderer, pEngine, 0.5f));
@@ -428,7 +449,7 @@ std::wstring SpiderEnemy::GetTypeName() const
 PuddleEnemy::PuddleEnemy(Renderer* pRenderer, Engine* pEngine)
 : Enemy(pRenderer, pEngine)
 {
-	maxSpeed = 0.1f;
+	maxSpeed = 0.05f;
 	health = 3;
 	sanityDropped = 5;
 	currentWeapon.reset(new SanityWeapon(this, pRenderer, pEngine, 5.0f));
@@ -449,7 +470,7 @@ std::wstring PuddleEnemy::GetTypeName() const
 GhostEnemy::GhostEnemy(Renderer* pRenderer, Engine* pEngine)
 : Enemy(pRenderer, pEngine)
 {
-	maxSpeed = 1.2f;
+	maxSpeed = 0.6f;
 	health = 2;
 	sanityDropped = 3;
 	currentWeapon.reset(new SanityWeapon(this, pRenderer, pEngine, 2.0f));

@@ -55,16 +55,25 @@ std::wstring Bullet::GetTypeName() const
 	return L"Bullet";
 }
 
+IWeapon::~IWeapon()
+{ }
+
 Weapon::Weapon(Entity* parent, Renderer* renderer, Engine* engine, float fireCooldown)
 : parent(parent), renderer(renderer), engine(engine), fireCooldown(fireCooldown), lastFireTime(0.0f)
 { }
 
-IWeapon::~IWeapon()
-{ }
+Weapon::~Weapon()
+{
+	for (auto bullet : bullets)
+		engine->RemoveEntity(bullet);
+}
 
 void Weapon::Update(float)
 {
 	bulletCollisions.clear();
+
+	if (bullets.empty())
+		return;
 
 	std::vector<std::list<Bullet*>::iterator> bulletsToDelete;
 	for (auto iter = bullets.begin(); iter != bullets.end(); ++iter)

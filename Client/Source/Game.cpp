@@ -1,6 +1,7 @@
 #include "Game.h"
 
 #include <windowsx.h>
+#include <fstream>
 #include <cassert>
 
 #include "PhysicsDebug.h"
@@ -15,7 +16,7 @@ const wchar_t* GameClient::WindowTitle = L"Nightmares";
 GameClient* g_pGameClient = nullptr;
 
 GameClient::GameClient()
-: renderer(new Renderer), GameState(nullptr, renderer.get())
+: renderer(new Renderer), GameState(nullptr, renderer.get()), startDay(0), needToQuit(false)
 {
 	srand(GetTickCount());
 }
@@ -169,7 +170,7 @@ void GameClient::Init(HINSTANCE instance)
 
 	InitFonts();
 
-	EnterState(new InGameState(this, renderer.get()));
+	EnterState(new MainMenuState(this, renderer.get(), startDay));
 }
 
 void GameClient::Input(float timeElapsed)
@@ -194,6 +195,8 @@ void GameClient::Render(float timeElapsed)
 		child->Render(timeElapsed);
 }
 
+#include <fstream>
+
 int GameClient::MainLoop()
 {
 	MSG msg;
@@ -202,11 +205,12 @@ int GameClient::MainLoop()
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
 
-	bool quit = false;
+	std::ofstream file("log.txt", std::ios::app);
+
 	const int TimePerFrame = 1000 / 60;
 	LARGE_INTEGER lastFrame;
 	QueryPerformanceCounter(&lastFrame);
-	while (!quit)
+	while (!needToQuit)
 	{
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
@@ -234,7 +238,31 @@ int GameClient::MainLoop()
 		Input(timeElapsed);
 		Update(timeElapsed);
 		Render(timeElapsed);
+
+		fps = int(1.0f / timeElapsed);
+
+		file << timeElapsed << " - " << fps << endl;
 	}
 
 	return msg.wParam;
+}
+
+void GameClient::SetStartDay(int startDay)
+{
+	this->startDay = startDay;
+}
+
+int GameClient::GetStartDay() const
+{
+	return startDay;
+}
+
+void GameClient::Quit()
+{
+	needToQuit = true;
+}
+
+int GameClient::GetFPS() const
+{
+	return fps;
 }

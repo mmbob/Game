@@ -45,6 +45,7 @@
 					"name": "Rock 1",
 					"texture_clip": "0, 64, 64, 128",
 					"block_movement": true,
+					"block_sight": true,
 					"block_type": "polygon",
 					"block_polygon": "8,0;33,0;63,27;63,48;49,63;0,63;0,33"
 				},
@@ -53,8 +54,27 @@
 					"name": "Rock 2",
 					"texture_clip": "64, 64, 128, 128",
 					"block_movement": true,
+					"block_sight": true,
 					"block_type": "polygon",
 					"block_polygon": "25,0;63,0;63,63;41,63;0,43"
+				},
+				{
+					"id": 40,
+					"name": "Hole 1",
+					"texture_clip": "128, 64, 192, 128",
+					"block_movement": true,
+					"block_sight": false,
+					"block_type": "rectangle",
+					"block_rectangle": "3,3,61,61"
+				},
+				{
+					"id": 50,
+					"name": "Tall Grass 1",
+					"texture_clip": "192, 64, 256, 128",
+					"block_movement": false,
+					"block_sight": true,
+					"block_type": "rectangle",
+					"block_rectangle": "2,0,62,64"
 				},
 				{
 					"id": 90,

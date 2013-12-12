@@ -1,5 +1,6 @@
 #include "GameState.h"
 
+#include "Game.h"
 #include "Renderer.h"
 #include "RenderObject.h"
 #include "Engine.h"
@@ -22,6 +23,7 @@ void GameState::EnterState(GameState* newState)
 
 void GameState::ExitState()
 {
+	delete child;
 	child = nullptr;
 }
 
@@ -53,8 +55,8 @@ GameState* GameState::GetChild() const
 	return child;
 }
 
-InGameState::InGameState(GameState* parent, Renderer* renderer)
-: GameState(parent, renderer), engine(new Engine), world(new GameWorld), player(new Player(renderer, engine.get())), gameTime(0.0f)
+InGameState::InGameState(GameState* parent, Renderer* renderer, int startDay)
+: GameState(parent, renderer), engine(new Engine), world(new GameWorld), player(new Player(renderer, engine.get())), gameTime(0.0f), startDay(startDay)
 {
 	DirectXManager* directX = renderer->GetDirectX();
 
@@ -71,18 +73,21 @@ InGameState::InGameState(GameState* parent, Renderer* renderer)
 	Rect dayLabelRect;
 	Rect timeLabelRect;
 	Rect spellCostRect;
+	Rect sanityGoalRect;
+	Rect fpsRect(0, 0, 1000, 600);
 
 	auto uiLargeFont = renderer->GetFont(L"UILarge");
 	auto uiMediumFont = renderer->GetFont(L"UIMedium");
 	auto uiSmallFont = renderer->GetFont(L"UISmall");
 
-	uiLargeFont->DrawText(nullptr, L"0099", -1, &sanityRect, DT_CALCRECT | DT_SINGLELINE, 0);
+	uiLargeFont->DrawText(nullptr, L"99", -1, &sanityRect, DT_CALCRECT | DT_SINGLELINE, 0);
 	uiLargeFont->DrawText(nullptr, L"+99", -1, &sanityUpdateRect, DT_CALCRECT | DT_SINGLELINE, 0);
 	uiMediumFont->DrawText(nullptr, L"12:00 am", -1, &timeRect, DT_CALCRECT | DT_SINGLELINE, 0);
 	uiMediumFont->DrawText(nullptr, L"999", -1, &dayRect, DT_CALCRECT | DT_SINGLELINE, 0);
 	uiSmallFont->DrawText(nullptr, L"Time", -1, &timeLabelRect, DT_CALCRECT | DT_SINGLELINE, 0);
 	uiSmallFont->DrawText(nullptr, L"Day", -1, &dayLabelRect, DT_CALCRECT | DT_SINGLELINE, 0);
 	uiSmallFont->DrawText(nullptr, L"8", -1, &spellCostRect, DT_CALCRECT | DT_SINGLELINE, 0);
+	uiSmallFont->DrawText(nullptr, L"/100", -1, &sanityGoalRect, DT_CALCRECT | DT_SINGLELINE, 0);
 
 	sanityRect = Rect(60, viewport.Height - sanityRect.bottom - 10, 60 + sanityRect.right, viewport.Height - 10);
 	sanityUpdateRect = Rect(sanityRect.right, sanityRect.top, sanityRect.right + sanityUpdateRect.right, sanityRect.bottom);
@@ -91,6 +96,7 @@ InGameState::InGameState(GameState* parent, Renderer* renderer)
 	timeLabelRect = Rect(timeRect.left, timeRect.top - timeLabelRect.bottom, timeRect.right, timeRect.top);
 	dayLabelRect = Rect(dayRect.left, dayRect.top - dayLabelRect.bottom, dayRect.right, dayRect.top);
 	spellCostRect = Rect(viewport.Width / 2 + 30 - spellCostRect.right, viewport.Height - 20 - spellCostRect.bottom, viewport.Width / 2 + 32, viewport.Height - 20);
+	sanityGoalRect = Rect(sanityRect.right + 10, viewport.Height - 20 - sanityGoalRect.bottom, viewport.Width, viewport.Height);
 
 	struct UITextElement
 	{
@@ -115,6 +121,8 @@ InGameState::InGameState(GameState* parent, Renderer* renderer)
 		UITextElement(L"DayLabel", uiSmallFont, L"Day", dayLabelRect, 0xFFFFFFFF, DT_SINGLELINE | DT_CENTER),
 		UITextElement(L"TimeLabel", uiSmallFont, L"Time", timeLabelRect, 0xFFFFFFFF, DT_SINGLELINE | DT_CENTER),
 		UITextElement(L"SpellCost", uiSmallFont, L"1", spellCostRect, 0xFFFFFFFF, DT_SINGLELINE),
+		UITextElement(L"SanityGoal", uiSmallFont, L"/100", sanityGoalRect, 0xFFFFFFFF, DT_SINGLELINE),
+		UITextElement(L"FPS", uiSmallFont, L"1000", fpsRect, 0xFFFFFFFF, DT_SINGLELINE),
 	};
 
 	for (UITextElement& element : elements)
@@ -155,6 +163,9 @@ InGameState::InGameState(GameState* parent, Renderer* renderer)
 	renderer->AddUIObject(spellBorderTexture);
 	renderer->AddUIObject(darknessTexture);
 
+	uiElements[L"Background"] = uiBackgroundTexture;
+	uiElements[L"SanityIcon"] = sanityTexture;
+	uiElements[L"SpellBorder"] = spellBorderTexture;
 	uiElements[L"Darkness"] = darknessTexture;
 
 	for (int i = 0; i < 10; ++i)
@@ -187,7 +198,19 @@ InGameState::InGameState(GameState* parent, Renderer* renderer)
 }
 
 InGameState::~InGameState()
-{ }
+{
+	world.reset();
+
+	engine->UnInit();
+
+	for (auto element : uiElements)
+	{
+		renderer->RemoveUIObject(element.second);
+		delete element.second;
+	}
+
+	renderer->SetPhysicsDraw(nullptr, nullptr);
+}
 
 void InGameState::EnterState(GameState* newState)
 {
@@ -210,13 +233,9 @@ void InGameState::Input(float timeElapsed)
 
 	DirectXManager* directX = renderer->GetDirectX();
 
-	static int escapeCheck = 0;
-	if (escapeCheck > 0)
-		escapeCheck--;
-	if (escapeCheck == 0 && directX->IsKeyPressed(DIK_ESCAPE))
+	if (directX->IsKeyPressed(DIK_ESCAPE))
 	{
 		EnterState(new InGamePausedState(this, renderer));
-		escapeCheck = 30;
 	}
 
 	int playerWeapon = -1;
@@ -257,21 +276,17 @@ void InGameState::Input(float timeElapsed)
 
 void InGameState::Update(float timeElapsed)
 {
+	reinterpret_cast<TextRenderObject*>(uiElements[L"FPS"])->SetText(to_wstring(g_pGameClient->GetFPS()));
+
 	if (child != nullptr)
 	{
 		child->Update(timeElapsed);
 		return;
 	}
 
-	gameTime += 1.0f / 60.0f;
+	gameTime += timeElapsed;
 
 	engine->Update(timeElapsed);
-
-	if (player->GetSanity() == 0)
-	{
-		parent->ExitState();
-		parent->EnterState(new GameOverState(parent, renderer));
-	}
 
 	D3DXVECTOR3 playerPosition;
 	player->GetPosition(&playerPosition);
@@ -279,12 +294,28 @@ void InGameState::Update(float timeElapsed)
 	D3DXVECTOR2 cameraPosition(playerPosition.x, playerPosition.y);
 	renderer->SetCameraPosition(cameraPosition);
 
-	int minutesSince730am = int(GetGameTime() * 10.0f);
+	int minutesSince730am = int(GetGameTime() * 30.0f);
 
-	int hoursPassed = int(float(minutesSince730am + 30) / 60.0f);
+	int hoursPassed = startDay * 24 + int(float(minutesSince730am + 30) / 60.0f);
+
 	int day = (hoursPassed + 7) / 24 + 1;
 	int hour = (hoursPassed + 7) % 24;
 	int minute = (minutesSince730am + 30) % 60;
+
+	if (player->GetSanity() == 0 || player->GetSanity() >= 100)
+	{
+		GameState* parent = this->parent;
+		Renderer* renderer = this->renderer;
+		int highestSanity = player->GetHighestSanity();
+		int startDay = this->startDay;
+
+		reinterpret_cast<GameClient*>(parent)->SetStartDay(day);
+
+		parent->ExitState();
+		parent->EnterState(new GameOverState(parent, renderer, day, highestSanity, hoursPassed - startDay * 24));
+
+		return;
+	}
 
 	std::wstring suffix = (hour >= 12 ? L"pm" : L"am");
 
@@ -363,24 +394,210 @@ void InGamePausedState::Input(float timeElapsed)
 void InGamePausedState::Update(float timeElapsed)
 { }
 
-GameOverState::GameOverState(GameState* parent, Renderer* renderer, int highestSanity, int hoursSurvived)
-: GameState(parent, renderer), highestSanity(highestSanity), hoursSurvived(hoursSurvived)
+GameOverState::GameOverState(GameState* parent, Renderer* renderer, int startDay, int highestSanity, int hoursSurvived)
+: GameState(parent, renderer), highestSanity(highestSanity), startDay(startDay), hoursSurvived(hoursSurvived),
+gameOverText(new TextRenderObject(renderer)), descriptionText(new TextRenderObject(renderer))
 {
-	TextRenderObject*
+	renderer->SetGameWorld(nullptr);
 
-	renderer->AddUIObject(
+	D3DVIEWPORT9 viewport;
+	renderer->GetDirectX()->GetDevice()->GetViewport(&viewport);
+
+	const wchar_t* gameOverString = highestSanity >= 100 ? L"You Win!" : L"Game Over";
+	Rect gameOverRect;
+	renderer->GetFont(L"UILarge")->DrawText(nullptr, gameOverString, -1, &gameOverRect, DT_SINGLELINE | DT_CALCRECT, 0);
+
+	gameOverRect = Rect((viewport.Width - gameOverRect.right) / 2, (viewport.Height - gameOverRect.bottom) / 2, viewport.Width, viewport.Height);
+
+	gameOverText->SetFont(renderer->GetFont(L"UILarge"));
+	gameOverText->SetText(L"Game Over");
+	gameOverText->SetRect(gameOverRect);
+	gameOverText->SetColor(D3DCOLOR_ARGB(255, 255, 255, 255));
+
+	wchar_t descriptionBuff[256];
+	if (highestSanity < 100)
+	{
+		if (hoursSurvived <= 24)
+			swprintf_s(descriptionBuff, L"You survived %d %s, collecting a maximum of %d sanity", hoursSurvived, hoursSurvived == 1 ? L"hour" : L"hours", highestSanity);
+		else
+		{
+			int days = hoursSurvived / 24;
+			int hours = hoursSurvived % 24;
+			const wchar_t* daysString = days == 1 ? L"day" : L"days";
+			const wchar_t* hoursString = hours == 1 ? L"hour" : L"hours";
+			swprintf_s(descriptionBuff, L"You survived %d %s and %d %s, collecting a maximum of %d sanity", days, daysString, hours, hoursString, highestSanity);
+		}
+	}
+	else
+	{
+		swprintf_s(descriptionBuff, L"It took you %d days to find your sanity", startDay + hoursSurvived / 24);
+	}
+	descriptionText->SetFont(renderer->GetFont(L"UISmall"));
+	descriptionText->SetText(descriptionBuff);
+	descriptionText->SetRect(Rect(0, viewport.Height - 100, viewport.Width, viewport.Height));
+	descriptionText->SetColor(D3DCOLOR_ARGB(255, 180, 180, 180));
+	descriptionText->SetFormat(DT_CENTER);
+
+	renderer->AddUIObject(descriptionText.get());
+	renderer->AddUIObject(gameOverText.get());
 }
 
 GameOverState::~GameOverState()
-{ }
+{
+	renderer->RemoveUIObject(gameOverText.get());
+	renderer->RemoveUIObject(descriptionText.get());
+}
 
 void GameOverState::Input(float timeElapsed)
 {
-	if (renderer->GetDirectX()->IsKeyPressed(DIK_SPACE))
+	DirectXManager* directX = renderer->GetDirectX();
+
+	if (directX->IsKeyPressed(DIK_SPACE) || directX->IsKeyPressed(DIK_ESCAPE) || directX->IsKeyPressed(DIK_RETURN) || directX->IsKeyPressed(DIK_NUMPADENTER))
 	{
+		GameState* parent = this->parent;
+		Renderer* renderer = this->renderer;
+		int startDay = highestSanity >= 100 ? 0 : this->startDay;
+
 		parent->ExitState();
+		parent->EnterState(new MainMenuState(parent, renderer, startDay));
 	}
 }
 
 void GameOverState::Update(float timeElapsed)
 { }
+
+MainMenuState::MainMenuState(GameState* parent, Renderer* renderer, int startDay)
+: GameState(parent, renderer), selectedMenuItem(MenuItemName::None), startDay(startDay)
+{
+	std::array<std::wstring, 2> itemNames = { L"Start Game", L"Quit" };
+
+	D3DVIEWPORT9 viewport;
+	renderer->GetDirectX()->GetDevice()->GetViewport(&viewport);
+
+	Rect itemRect;
+	LPD3DXFONT font = renderer->GetFont(L"UIMedium");
+	font->DrawText(nullptr, itemNames[0].c_str(), -1, &itemRect, DT_SINGLELINE | DT_CALCRECT, 0);
+
+	int itemHeight = itemRect.bottom;
+
+	itemRect.top = (viewport.Height - itemNames.size() * itemHeight) / 2;
+	itemRect.bottom = itemRect.top + itemHeight;
+	itemRect.right = viewport.Width;
+
+	int itemStartY = itemRect.top;
+
+	for (const std::wstring& name : itemNames)
+	{
+		auto menuItem = new TextRenderObject(renderer);
+		menuItem->SetFont(font);
+		menuItem->SetRect(itemRect);
+		menuItem->SetFormat(DT_SINGLELINE | DT_CENTER);
+		menuItem->SetColor(D3DCOLOR_ARGB(255, 255, 255, 255));
+		menuItem->SetText(name);
+
+		uiElements[name] = menuItem;
+		menuItems.push_back(menuItem);
+		renderer->AddUIObject(menuItem);
+
+		itemRect.top += itemHeight;
+		itemRect.bottom += itemHeight;
+	}
+
+	auto titleTexture = new TextureRenderObject(renderer);
+	titleTexture->SetTextureName(L"UI1");
+	titleTexture->SetTextureClip(Rect(0, 256, 522, 256 + 110));
+	titleTexture->SetPosition(D3DXVECTOR3(float(viewport.Width - 522) / 2.0f, itemStartY - 130, 0.5f));
+	uiElements[L"Title"] = titleTexture;
+	renderer->AddUIObject(titleTexture);
+
+	SelectMenuItem(MenuItemName::StartGame);
+}
+
+MainMenuState::~MainMenuState()
+{
+	for (auto element : uiElements)
+	{
+		renderer->RemoveUIObject(element.second);
+		delete element.second;
+	}
+}
+
+void MainMenuState::SelectMenuItem(MenuItemName::Value newSelection)
+{
+	if (newSelection != selectedMenuItem)
+	{
+		if (selectedMenuItem != MenuItemName::None)
+			menuItems[selectedMenuItem]->SetColor(D3DCOLOR_ARGB(255, 255, 255, 255));
+
+		selectedMenuItem = newSelection;
+
+		selectedItemTween = 0.0f;
+		selectedItemTweenChange = 1.5f;
+	}
+}
+
+void MainMenuState::Input(float timeElapsed)
+{
+	if (child != nullptr)
+	{
+		child->Input(timeElapsed);
+		return;
+	}
+
+	DirectXManager* directX = renderer->GetDirectX();
+
+	MenuItemName::Value newSelection = selectedMenuItem;
+
+	if (directX->IsKeyPressed(DIK_UP) || directX->IsKeyPressed(DIK_W))
+		newSelection = (MenuItemName::Value) std::max<int>(0, selectedMenuItem - 1);
+	else if (directX->IsKeyPressed(DIK_DOWN) || directX->IsKeyPressed(DIK_S))
+		newSelection = (MenuItemName::Value) std::min<int>(menuItems.size() - 1, selectedMenuItem + 1);
+
+	SelectMenuItem(newSelection);
+
+	if (directX->IsKeyPressed(DIK_SPACE) || directX->IsKeyPressed(DIK_RETURN))
+	{
+		switch (selectedMenuItem)
+		{
+		case MenuItemName::StartGame:
+			{
+				GameState* parent = this->parent;
+				Renderer* renderer = this->renderer;
+				int startDay = this->startDay;
+				parent->ExitState();
+				parent->EnterState(new InGameState(parent, renderer, startDay));
+			}
+			break;
+
+		case MenuItemName::Quit:
+			{
+				reinterpret_cast<GameClient*>(parent)->Quit();
+			}
+			break;
+		}
+	}
+}
+
+void MainMenuState::Update(float timeElapsed)
+{
+	if (child != nullptr)
+	{
+		child->Update(timeElapsed);
+		return;
+	}
+
+	const D3DCOLOR MaxColor = D3DCOLOR_XRGB(83, 0, 209);
+	menuItems[selectedMenuItem]->SetColor(MixColors(0xFFFFFFFF, MaxColor, 0.5f * selectedItemTween));
+
+	selectedItemTween += selectedItemTweenChange * timeElapsed;
+	if (selectedItemTween <= 0.0f)
+	{
+		selectedItemTween = 0.0f;
+		selectedItemTweenChange = -selectedItemTweenChange;
+	}
+	else if (selectedItemTween >= 1.0f)
+	{
+		selectedItemTween = 1.0f;
+		selectedItemTweenChange = -selectedItemTweenChange;
+	}
+}

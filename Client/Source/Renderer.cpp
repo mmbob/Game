@@ -11,6 +11,10 @@ void Renderer::Init(DirectXManager* pDirectX, HWND)
 	this->pDirectX = pDirectX;
 	debugDraw = nullptr;
 	ambientColor = 0xFFFFFFFF;
+	gameWorld = nullptr;
+	D3DVIEWPORT9 viewport;
+	pDirectX->GetDevice()->GetViewport(&viewport);
+	gameArea = Rect(0, 0, viewport.Width, viewport.Height);
 
 	LoadTextures();
 }
@@ -52,6 +56,8 @@ LPDIRECT3DTEXTURE9 Renderer::GetTexture(wstring textureName) const
 
 void Renderer::RenderTiles(const D3DXMATRIX& positionTransform) const
 {
+	if (gameWorld == nullptr)
+		return;
 	auto pSprite = pDirectX->GetSprite();
 
 	LPDIRECT3DTEXTURE9 tileSets[] =
@@ -81,7 +87,7 @@ void Renderer::RenderTiles(const D3DXMATRIX& positionTransform) const
 
 				D3DXVECTOR3 position3(position4.x, position4.y, rawPosition.z);
 				pSprite->Draw(tileSets[tile.Tileset], &tile.TextureClip, nullptr, &position3, ambientColor);
-}
+			}
 		}
 	}
 }
@@ -110,7 +116,7 @@ void Renderer::RenderObjectList(const list<IRenderObject*>& list, const D3DXMATR
 			D3DXVECTOR3 rawPosition;
 			texObject->GetPosition(&rawPosition);
 
-			D3DXVECTOR4 position4;
+			D3DXVECTOR4 position4(rawPosition.x, rawPosition.y, rawPosition.z, 0.0f);
 			D3DXVec3Transform(&position4, &rawPosition, &positionTransform);
 
 			D3DCOLOR color;
@@ -160,7 +166,7 @@ void Renderer::RenderObjectList(const list<IRenderObject*>& list, const D3DXMATR
 		}
 
 	}
-	}
+}
 
 void Renderer::RenderWorld() const
 {
@@ -187,11 +193,11 @@ void Renderer::Render() const
 {
 	LPDIRECT3DDEVICE9 pDevice = pDirectX->GetDevice();
 
-	HRESULT result = pDevice->Clear(0, 0, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(255, 255, 255), 1.0f, 0);
+	HRESULT result = pDevice->Clear(0, 0, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
 
 	if (SUCCEEDED(result = pDevice->BeginScene()))
 	{
-		float timeElapsed = MeasureTime([&]() { RenderWorld(); });
+		RenderWorld();
 
 		static bool drawDebug = false;
 		if (pDirectX->IsKeyPressed(DIK_F1))
@@ -199,7 +205,7 @@ void Renderer::Render() const
 
 		if (drawDebug && debugDraw != nullptr)
 		{
-			timeElapsed = MeasureTime([&]() { physics->DrawDebugData(); });
+			float timeElapsed = MeasureTime([&]() { physics->DrawDebugData(); });
 		}
 
 		result = pDevice->EndScene();

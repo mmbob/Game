@@ -32,7 +32,7 @@ const WorldChunk& GameWorld::GetChunk(int x, int y) const
 	if (chunk.IsInitialized())
 		return chunk;
 
-	generator->GenerateChunk(*this, x, y, &chunk);
+	generator->GenerateChunk(this, x, y, &chunk);
 
 	return chunk;
 }
@@ -61,7 +61,7 @@ void GameWorld::LoadChunk(int x, int y)
 	x = (x + 40) % 40;
 	y = (y + 40) % 40;
 	if (!isChunkLoaded[y][x])
-		generator->LoadChunk(*this, x, y, GetChunk(x, y));
+		generator->LoadChunk(this, x, y);
 
 	isChunkLoaded[y][x] = true;
 }
@@ -71,7 +71,7 @@ void GameWorld::UnloadChunk(int x, int y)
 	x = (x + 40) % 40;
 	y = (y + 40) % 40;
 	if (isChunkLoaded[y][x])
-		generator->UnloadChunk(*this, x, y, GetChunk(x, y));
+		generator->UnloadChunk(this, x, y);
 
 	isChunkLoaded[y][x] = false;
 }
@@ -103,6 +103,9 @@ const Tile& WorldChunk::GetTile(int layer, int x, int y) const
 
 void WorldChunk::SetTile(int layer, int x, int y, const Tile& tile)
 {
+	if (tile.ID < 0 || tile.ID > 255)
+		DebugBreak();
+
 	assert(layer < MaxLayerCount);
 	tiles[layer][y][x] = &tile;
 
