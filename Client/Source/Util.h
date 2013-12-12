@@ -47,5 +47,5 @@ float MeasureTime(const T& function)
 	LARGE_INTEGER end;
 	QueryPerformanceCounter(&end);
 
-	return float(end.QuadPart - begin.QuadPart) / float(frequency.QuadPart) * 1000.0f;
+	return float(end.QuadPart - begin.QuadPart) / float(frequency.QuadPart);
 }

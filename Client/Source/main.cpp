@@ -13,6 +13,7 @@ using namespace std;
 #pragma comment(lib, "d3dx9.lib")
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
+#pragma comment(lib, "winmm.lib")
 
 #ifdef _DEBUG
 #pragma comment(lib, "box2dd.lib")

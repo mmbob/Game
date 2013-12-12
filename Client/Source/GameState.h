@@ -42,6 +42,7 @@ class InGameState : public GameState
 	float gameTime;
 	bool isDayTime;
 	int startDay;
+	bool showFPS;
 
 	std::unordered_map<std::wstring, IRenderObject*> uiElements;
 public:
@@ -67,6 +68,19 @@ class InGamePausedState : public GameState
 public:
 	InGamePausedState(GameState* parent, Renderer* renderer);
 	virtual ~InGamePausedState();
+
+	virtual void Input(float timeElapsed);
+	virtual void Update(float timeElapsed);
+};
+
+class GameStartState : public GameState
+{
+	int startDay;
+
+	std::unique_ptr<TextRenderObject> storyText;
+public:
+	GameStartState(GameState* parent, Renderer* renderer, int startDay);
+	virtual ~GameStartState();
 
 	virtual void Input(float timeElapsed);
 	virtual void Update(float timeElapsed);
@@ -114,14 +128,5 @@ public:
 	virtual ~MainMenuState();
 
 	virtual void Input(float timeElapsed);
-	virtual void Update(float timeElapsed);
-};
-
-class HighScoreState : public GameState
-{
-public:
-	HighScoreState(GameState* parent, Renderer* renderer);
-	virtual ~HighScoreState();
-
 	virtual void Update(float timeElapsed);
 };

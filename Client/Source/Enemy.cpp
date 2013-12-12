@@ -59,6 +59,7 @@ lastSawPlayerTime(0.0f), textureAlpha(255), recentDamageAlpha(0)
 
 Enemy::~Enemy()
 {
+	renderer->RemoveRenderObject(damageRender.get());
 	for (Entity* drop : drops)
 	{
 		parent->RemoveEntity(drop);
@@ -407,17 +408,17 @@ float32 Enemy::PlayerSightRayCast::ReportFixture(b2Fixture* fixture, const b2Vec
 CloudEnemy::CloudEnemy(Renderer* pRenderer, Engine* pEngine)
 : Enemy(pRenderer, pEngine)
 {
-	maxSpeed = 1.0f;
-	health = 5;
+	maxSpeed = 1.2f;
+	health = 4;
 	sanityDropped = 8;
-	currentWeapon.reset(new SanityWeapon(this, pRenderer, pEngine, 2.5f));
+	currentWeapon.reset(new SanityWeapon(this, pRenderer, pEngine, 2.0f));
 
 	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
 
 	textureObject->SetTextureName(L"Entities1");
 	textureObject->SetTextureClip(Rect(67, 70, 67 + 58, 70 + 53));
 
-	CreateBody(58, 53, 0.4f);
+	CreateBody(58, 53, 0.25f);
 }
 
 std::wstring CloudEnemy::GetTypeName() const
@@ -428,10 +429,10 @@ std::wstring CloudEnemy::GetTypeName() const
 SpiderEnemy::SpiderEnemy(Renderer* pRenderer, Engine* pEngine)
 : Enemy(pRenderer, pEngine)
 {
-	maxSpeed = 1.2f;
-	health = 4;
+	maxSpeed = 1.5f;
+	health = 3;
 	sanityDropped = 10;
-	currentWeapon.reset(new SpiderMeleeWeapon(this, pRenderer, pEngine, 0.5f));
+	currentWeapon.reset(new SpiderMeleeWeapon(this, pRenderer, pEngine, 0.75f));
 
 	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
 
@@ -450,8 +451,8 @@ PuddleEnemy::PuddleEnemy(Renderer* pRenderer, Engine* pEngine)
 : Enemy(pRenderer, pEngine)
 {
 	maxSpeed = 0.05f;
-	health = 3;
-	sanityDropped = 5;
+	health = 10;
+	sanityDropped = 15;
 	currentWeapon.reset(new SanityWeapon(this, pRenderer, pEngine, 5.0f));
 
 	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
@@ -470,17 +471,17 @@ std::wstring PuddleEnemy::GetTypeName() const
 GhostEnemy::GhostEnemy(Renderer* pRenderer, Engine* pEngine)
 : Enemy(pRenderer, pEngine)
 {
-	maxSpeed = 0.6f;
+	maxSpeed = 0.8f;
 	health = 2;
-	sanityDropped = 3;
-	currentWeapon.reset(new SanityWeapon(this, pRenderer, pEngine, 2.0f));
+	sanityDropped = 4;
+	currentWeapon.reset(new SanityWeapon(this, pRenderer, pEngine, 1.5f));
 
 	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
 
 	textureObject->SetTextureName(L"Entities1");
 	textureObject->SetTextureClip(Rect(262, 67, 262 + 55, 67 + 58));
 
-	CreateBody(55, 58, 1.0f);
+	CreateBody(55, 58, 0.1f);
 }
 
 std::wstring GhostEnemy::GetTypeName() const

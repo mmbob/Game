@@ -3,7 +3,7 @@
 #include "Game.h"
 
 SpiderMeleeBullet::SpiderMeleeBullet(IWeapon* parent, Renderer* pRenderer, Engine* pEngine)
-: Bullet(parent, pRenderer, pEngine, new TextureRenderObject(pRenderer), 0.2f)
+: Bullet(parent, pRenderer, pEngine, new TextureRenderObject(pRenderer), 0.10f)
 {
 	auto textureObject = reinterpret_cast<TextureRenderObject*>(renderObject.get());
 

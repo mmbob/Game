@@ -195,53 +195,64 @@ void GameClient::Render(float timeElapsed)
 		child->Render(timeElapsed);
 }
 
-#include <fstream>
-
 int GameClient::MainLoop()
 {
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
 
-	LARGE_INTEGER frequency;
-	QueryPerformanceFrequency(&frequency);
+	int timePeriod = 10;
 
-	std::ofstream file("log.txt", std::ios::app);
-
-	const int TimePerFrame = 1000 / 60;
-	LARGE_INTEGER lastFrame;
-	QueryPerformanceCounter(&lastFrame);
-	while (!needToQuit)
+	TIMECAPS timeCaps;
+	if (timeGetDevCaps(&timeCaps, sizeof(timeCaps)) != TIMERR_NOERROR)
 	{
-		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		timePeriod = std::max<int>(timePeriod, timeCaps.wPeriodMin);
+		timeBeginPeriod(timePeriod);
+	}
+
+	try
+	{
+		LARGE_INTEGER frequency;
+		QueryPerformanceFrequency(&frequency);
+
+		const int TimePerFrame = 1000 / 60;
+		LARGE_INTEGER lastFrame;
+		QueryPerformanceCounter(&lastFrame);
+		while (!needToQuit)
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+
+			if (msg.message == WM_QUIT)
+				break;
+
+			LARGE_INTEGER currentFrame;
+			QueryPerformanceCounter(&currentFrame);
+
+			float timeElapsed = float(currentFrame.QuadPart - lastFrame.QuadPart) / float(frequency.QuadPart);
+
+			if (int(timeElapsed * 1000) < TimePerFrame)
+				Sleep(TimePerFrame - int(timeElapsed * 1000));
+
+			LARGE_INTEGER oldLastFrame = lastFrame;
+			lastFrame = currentFrame;
+			QueryPerformanceCounter(&currentFrame);
+
+			timeElapsed = float(currentFrame.QuadPart - oldLastFrame.QuadPart) / float(frequency.QuadPart);
+
+			Input(timeElapsed);
+			Update(timeElapsed);
+			Render(timeElapsed);
+
+			fps = int(1.0f / timeElapsed);
 		}
-
-		if (msg.message == WM_QUIT)
-			break;
-
-		LARGE_INTEGER currentFrame;
-		QueryPerformanceCounter(&currentFrame);
-
-		float timeElapsed = float(currentFrame.QuadPart - lastFrame.QuadPart) / float(frequency.QuadPart);
-
-		if (int(timeElapsed * 1000) < TimePerFrame)
-			Sleep(TimePerFrame - int(timeElapsed * 1000));
-
-		LARGE_INTEGER oldLastFrame = lastFrame;
-		lastFrame = currentFrame;
-		QueryPerformanceCounter(&currentFrame);
-
-		timeElapsed = float(currentFrame.QuadPart - oldLastFrame.QuadPart) / float(frequency.QuadPart);
-
-		Input(timeElapsed);
-		Update(timeElapsed);
-		Render(timeElapsed);
-
-		fps = int(1.0f / timeElapsed);
-
-		file << timeElapsed << " - " << fps << endl;
+	}
+	catch (...)
+	{
+		timeEndPeriod(timePeriod);
+		throw;
 	}
 
 	return msg.wParam;

@@ -46,7 +46,7 @@ SanityWeapon::SanityWeapon(Entity* parent, Renderer* renderer, Engine* engine, f
 bool SanityWeapon::Fire(const D3DXVECTOR2& start, float angle)
 {
 	const float bulletLifeTime = 1.0f;
-	const float bulletSpeed = 5.0f;
+	const float bulletSpeed = 3.0f;
 
 	if (CanFire())
 	{

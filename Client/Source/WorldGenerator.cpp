@@ -52,7 +52,7 @@ bool WorldGenerator::GenerateChunk(const GameWorld* world, int x, int y, WorldCh
 		int featureTile = TileName::Blank;
 		if (std::abs(noSpawnZone.x - tileX) >= 2 || std::abs(noSpawnZone.y - tileY) >= 2)	// Make sure a rock or enemy doesn't spawn too close to player
 		{
-			const int SpawnRate = 8;
+			const int SpawnRate = 3;
 
 			int grassTileCount = 0;
 			if (tileX > 0 && chunk.GetTile(1, tileX - 1, tileY).ID == TileName::TallGrass1)
@@ -61,13 +61,13 @@ bool WorldGenerator::GenerateChunk(const GameWorld* world, int x, int y, WorldCh
 				grassTileCount += 25;
 
 			int randValue = rand() % 100;
-			if (randValue < SpawnRate)
+			if (randValue < 2 * SpawnRate)
 				featureTile = TileName::Rock1;
-			else if (randValue < 2 * SpawnRate)
+			else if (randValue < 4 * SpawnRate)
 				featureTile = TileName::Rock2;
-			else if (randValue < 2 * SpawnRate)
+			else if (randValue < 5 * SpawnRate)
 				featureTile = TileName::Hole1;
-			else if (randValue < 2 * SpawnRate + 2 + grassTileCount)
+			else if (randValue < 6 * SpawnRate + 2 + grassTileCount)
 				featureTile = TileName::TallGrass1;
 
 			if (featureTile == TileName::Blank)

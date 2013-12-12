@@ -56,7 +56,7 @@ GameState* GameState::GetChild() const
 }
 
 InGameState::InGameState(GameState* parent, Renderer* renderer, int startDay)
-: GameState(parent, renderer), engine(new Engine), world(new GameWorld), player(new Player(renderer, engine.get())), gameTime(0.0f), startDay(startDay)
+: GameState(parent, renderer), engine(new Engine), world(new GameWorld), player(new Player(renderer, engine.get())), gameTime(0.0f), startDay(startDay), showFPS(false)
 {
 	DirectXManager* directX = renderer->GetDirectX();
 
@@ -138,6 +138,8 @@ InGameState::InGameState(GameState* parent, Renderer* renderer, int startDay)
 		renderer->AddUIObject(renderObject);
 	}
 
+	renderer->RemoveUIObject(uiElements[L"FPS"]);
+
 	auto uiBackgroundTexture = new TextureRenderObject(renderer);
 	uiBackgroundTexture->SetPosition(D3DXVECTOR3(0.0f, 500.0f, 0.25f));
 	uiBackgroundTexture->SetTextureName(L"UI1");
@@ -200,6 +202,7 @@ InGameState::InGameState(GameState* parent, Renderer* renderer, int startDay)
 InGameState::~InGameState()
 {
 	world.reset();
+	player.reset();
 
 	engine->UnInit();
 
@@ -236,6 +239,14 @@ void InGameState::Input(float timeElapsed)
 	if (directX->IsKeyPressed(DIK_ESCAPE))
 	{
 		EnterState(new InGamePausedState(this, renderer));
+	}
+	if (directX->IsKeyPressed(DIK_F2))
+	{
+		showFPS = !showFPS;
+		if (showFPS)
+			renderer->AddUIObject(uiElements[L"FPS"]);
+		else
+			renderer->RemoveUIObject(uiElements[L"FPS"]);
 	}
 
 	int playerWeapon = -1;
@@ -294,7 +305,7 @@ void InGameState::Update(float timeElapsed)
 	D3DXVECTOR2 cameraPosition(playerPosition.x, playerPosition.y);
 	renderer->SetCameraPosition(cameraPosition);
 
-	int minutesSince730am = int(GetGameTime() * 30.0f);
+	int minutesSince730am = int(GetGameTime() * 10.0f);
 
 	int hoursPassed = startDay * 24 + int(float(minutesSince730am + 30) / 60.0f);
 
@@ -394,6 +405,51 @@ void InGamePausedState::Input(float timeElapsed)
 void InGamePausedState::Update(float timeElapsed)
 { }
 
+GameStartState::GameStartState(GameState* parent, Renderer* renderer, int startDay)
+: GameState(parent, renderer), startDay(startDay), storyText(new TextRenderObject(renderer))
+{
+	D3DVIEWPORT9 viewport;
+	renderer->GetDirectX()->GetDevice()->GetViewport(&viewport);
+
+	wchar_t storyBuff[512];
+	const wchar_t* storyString = L"You were in an accident.  Right now you are trapped in a coma, trekking through endless, recurring nightmares.  Figments of your imagination spring forth from the ground to haunt your crippled mind.  Fight them to recover what sanity you have left and release yourself from the Nightmares\n\nDay %d";
+
+	swprintf_s(storyBuff, storyString, startDay + 1);
+
+	Rect storyRect(viewport.Width * 1 / 4, viewport.Height * 1 / 4, viewport.Width * 3 / 4, viewport.Height * 3 / 4);
+
+	storyText->SetFont(renderer->GetFont(L"UISmall"));
+	storyText->SetText(storyBuff);
+	storyText->SetRect(storyRect);
+	storyText->SetColor(D3DCOLOR_ARGB(255, 255, 255, 255));
+	storyText->SetFormat(DT_CENTER | DT_WORDBREAK);
+
+	renderer->AddUIObject(storyText.get());
+}
+
+GameStartState::~GameStartState()
+{
+	renderer->RemoveUIObject(storyText.get());
+}
+
+void GameStartState::Input(float timeElapsed)
+{
+	DirectXManager* directX = renderer->GetDirectX();
+
+	if (directX->IsKeyPressed(DIK_SPACE) || directX->IsKeyPressed(DIK_ESCAPE) || directX->IsKeyPressed(DIK_RETURN) || directX->IsKeyPressed(DIK_NUMPADENTER))
+	{
+		GameState* parent = this->parent;
+		Renderer* renderer = this->renderer;
+		int startDay = this->startDay;
+
+		parent->ExitState();
+		parent->EnterState(new InGameState(parent, renderer, startDay));
+	}
+}
+
+void GameStartState::Update(float timeElapsed)
+{ }
+
 GameOverState::GameOverState(GameState* parent, Renderer* renderer, int startDay, int highestSanity, int hoursSurvived)
 : GameState(parent, renderer), highestSanity(highestSanity), startDay(startDay), hoursSurvived(hoursSurvived),
 gameOverText(new TextRenderObject(renderer)), descriptionText(new TextRenderObject(renderer))
@@ -410,7 +466,7 @@ gameOverText(new TextRenderObject(renderer)), descriptionText(new TextRenderObje
 	gameOverRect = Rect((viewport.Width - gameOverRect.right) / 2, (viewport.Height - gameOverRect.bottom) / 2, viewport.Width, viewport.Height);
 
 	gameOverText->SetFont(renderer->GetFont(L"UILarge"));
-	gameOverText->SetText(L"Game Over");
+	gameOverText->SetText(L"You Win!");
 	gameOverText->SetRect(gameOverRect);
 	gameOverText->SetColor(D3DCOLOR_ARGB(255, 255, 255, 255));
 
@@ -565,7 +621,7 @@ void MainMenuState::Input(float timeElapsed)
 				Renderer* renderer = this->renderer;
 				int startDay = this->startDay;
 				parent->ExitState();
-				parent->EnterState(new InGameState(parent, renderer, startDay));
+				parent->EnterState(new GameStartState(parent, renderer, startDay));
 			}
 			break;
 

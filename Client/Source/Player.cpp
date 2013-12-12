@@ -38,11 +38,11 @@ Player::Player(Renderer* pRenderer, Engine* pEngine)
 
 	WeaponInfo sanityInfo;
 	sanityInfo.SanityCost = 1;
-	sanityInfo.Weapon = new SanityWeapon(this, pRenderer, pEngine, 0.5f);
+	sanityInfo.Weapon = new SanityWeapon(this, pRenderer, pEngine, 0.7f);
 
 	WeaponInfo sanity2Info;
 	sanity2Info.SanityCost = 2;
-	sanity2Info.Weapon = new DoubleSanityWeapon(this, pRenderer, pEngine, 0.7f);
+	sanity2Info.Weapon = new DoubleSanityWeapon(this, pRenderer, pEngine, 1.0f);
 
 	WeaponInfo lightningInfo;
 	lightningInfo.SanityCost = 3;
